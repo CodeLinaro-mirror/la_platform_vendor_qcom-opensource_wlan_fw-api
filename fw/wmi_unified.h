@@ -150,7 +150,7 @@ static INLINE void wmi_packed_arr_set_bits(A_UINT32 *arr, A_UINT32 entry_index,
 }
 
 /** 2 word representation of MAC addr */
-typedef struct {
+typedef struct _wmi_mac_addr {
     /** upper 4 bytes of  MAC address */
     A_UINT32 mac_addr31to0;
     /** lower 2 bytes of  MAC address */
@@ -176,6 +176,16 @@ typedef struct {
         ((c_macaddr)[3] << 24)); \
     (pwmi_mac_addr)->mac_addr47to32 = ((c_macaddr)[4] | ((c_macaddr)[5] << 8));\
    } while (0)
+
+/*
+ * The below function declarations are for implementations on some
+ * platforms of the above macros, but in function form, to save code
+ * memory by avoiding macro-inlining of a non-trivial amount of code.
+ * These function versions of the above macros may not be available
+ * on all host and target platforms.
+ */
+void wmi_mac_addr_to_char_array(wmi_mac_addr *pwmi_mac_addr, A_UINT8 *c_macaddr);
+void wmi_char_array_to_mac_addr(A_UINT8 *c_macaddr, wmi_mac_addr *pwmi_mac_addr);
 
 /*
  * wmi command groups.
@@ -5104,6 +5114,8 @@ typedef enum {
      * >21:  invalid value (ignored)
      */
     WMI_PDEV_PARAM_MWSCOEX_SET_5GNR_PWR_LIMIT,        /* 0xA5 */
+    /** Set max msdus available for cong ctrl in target */
+    WMI_PDEV_PARAM_SET_CONG_CTRL_MAX_MSDUS,          /* 0xA6 */
 } WMI_PDEV_PARAM;
 
 typedef struct {
@@ -11274,6 +11286,8 @@ typedef struct {
     A_UINT32 wmm_caps;
     A_UINT32 mcsset[ROAM_OFFLOAD_NUM_MCS_SET>>2]; /* since this 4 byte aligned, we don't declare it as tlv array */
     A_UINT32 handoff_delay_for_rx; /* In msec. Delay Hand-Off by this duration to receive pending Rx frames from current BSS */
+    A_UINT32 max_mlme_sw_retries; /* maximum number of software retries for preauth and reassoc req */
+    A_UINT32 no_ack_timeout; /* In msec. duration to wait before another SW retry made if no ack seen for previous frame */
 } wmi_roam_offload_tlv_param;
 
 
@@ -20687,6 +20701,17 @@ typedef enum wmi_coex_config_type {
                                                  arg2-arg5: BT information parameters */
     WMI_COEX_CONFIG_SINK_WLAN_TDM       = 21, /* config interval (ms units) (arg1 BT, arg2 WLAN) for A2DP SINK + WLAN */
     WMI_COEX_CONFIG_COEX_ENABLE_MCC_TDM = 22, /* config disable/enable COEX TDM for MCC */
+    WMI_COEX_CONFIG_LOWRSSI_A2DPOPP_TDM = 23, /* config interval (ms units) (arg1 BT, arg2 WLAN) for STA + A2dp + OPP + LOWRSSI */
+    WMI_COEX_CONFIG_BTC_MODE            = 24, /* config BTC mode, arg1 mode: 0 TDD/1 FDD/2 Hybrid*/
+    WMI_COEX_CONFIG_ANTENNA_ISOLATION   = 25, /* config isolation between BT and WLAN antenna, arg1 isolation in db*/
+    WMI_COEX_CONFIG_BT_LOW_RSSI_THRESHOLD = 26,/*config BT low rssi threshold (dbm units)*/
+    WMI_COEX_CONFIG_BT_INTERFERENCE_LEVEL = 27,/*config bt interference level (dbm units)
+                                                 arg1 low - lower limit
+                                                 arg2 low - upper limit
+                                                 arg3 medium - lower limit
+                                                 arg4 medium - upper limit
+                                                 arg5 high - lower limit
+                                                 arg6 high - upper limit */
 } WMI_COEX_CONFIG_TYPE;
 
 typedef struct {
@@ -21981,6 +22006,8 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_MOTION_DET_BASE_LINE_CONFIG_PARAM_CMDID);
         WMI_RETURN_STRING(WMI_MOTION_DET_START_STOP_CMDID);
         WMI_RETURN_STRING(WMI_MOTION_DET_BASE_LINE_START_STOP_CMDID);
+        WMI_RETURN_STRING(WMI_SAR_LIMITS_CMDID);
+        WMI_RETURN_STRING(WMI_SAR_GET_LIMITS_CMDID);
     }
 
     return "Invalid WMI cmd";
