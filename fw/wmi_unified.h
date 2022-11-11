@@ -3115,6 +3115,35 @@ typedef enum {
     WMI_AFC_FEATURE_6G_DEPLOYMENT_OUTDOOR_ONLY = 2,
 } WMI_AFC_FEATURE_6G_DEPLOYMENT_TYPE;
 
+typedef enum {
+    WMI_BDF_VERSION_CHECK_DISABLED = 0,
+
+    /* WMI_BDF_VERSION_CHECK_GOOD:
+     * BDF version is matched with FW.
+     */
+    WMI_BDF_VERSION_CHECK_GOOD = 1,
+
+    /* WMI_BDF_VERSION_TEMPLATE_TOO_OLD:
+     * BDF template version is older than the oldest version supported by FW.
+     */
+    WMI_BDF_VERSION_TEMPLATE_TOO_OLD = 2,
+
+    /* WMI_BDF_VERSION_TEMPLATE_TOO_NEW:
+     * BDF template version is newer than the newest version supported by FW.
+     */
+    WMI_BDF_VERSION_TEMPLATE_TOO_NEW = 3,
+
+    /* WMI_BDF_VERSION_FW_TOO_OLD:
+     * FW version is older than the major version supported by BDF.
+     */
+    WMI_BDF_VERSION_FW_TOO_OLD = 4,
+
+    /* WMI_BDF_VERSION_FW_TOO_NEW:
+     * FW version is newer than the minor version supported by BDF.
+     */
+    WMI_BDF_VERSION_FW_TOO_NEW = 5,
+} wmi_bdf_version_status_type;
+
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_service_ready_ext2_event_fixed_param.*/
 
@@ -3227,6 +3256,11 @@ typedef struct {
      * refer to WMI_AFC_FEATURE_6G_DEPLOYMENT_TYPE enum
      */
     A_UINT32 afc_deployment_type;
+
+    /*
+     * Board data check report. Please see wmi_hw_bd_status_type enum values.
+     */
+    A_UINT32 hw_bd_status;
 
     /* Followed by next TLVs:
      *     WMI_DMA_RING_CAPABILITIES          dma_ring_caps[];
