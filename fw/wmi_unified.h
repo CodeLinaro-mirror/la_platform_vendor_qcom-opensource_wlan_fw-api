@@ -3109,6 +3109,41 @@ typedef struct {
     A_UINT32 index_and_type;
 } wmi_htt_msdu_idx_to_htt_msdu_qtype;
 
+typedef enum {
+    WMI_AFC_FEATURE_6G_DEPLOYMENT_UNSPECIFIED = 0,
+    WMI_AFC_FEATURE_6G_DEPLOYMENT_INDOOR_ONLY =  1,
+    WMI_AFC_FEATURE_6G_DEPLOYMENT_OUTDOOR_ONLY = 2,
+} WMI_AFC_FEATURE_6G_DEPLOYMENT_TYPE;
+
+typedef enum {
+    WMI_BDF_VERSION_CHECK_DISABLED = 0,
+
+    /* WMI_BDF_VERSION_CHECK_GOOD:
+     * BDF version is matched with FW.
+     */
+    WMI_BDF_VERSION_CHECK_GOOD = 1,
+
+    /* WMI_BDF_VERSION_TEMPLATE_TOO_OLD:
+     * BDF template version is older than the oldest version supported by FW.
+     */
+    WMI_BDF_VERSION_TEMPLATE_TOO_OLD = 2,
+
+    /* WMI_BDF_VERSION_TEMPLATE_TOO_NEW:
+     * BDF template version is newer than the newest version supported by FW.
+     */
+    WMI_BDF_VERSION_TEMPLATE_TOO_NEW = 3,
+
+    /* WMI_BDF_VERSION_FW_TOO_OLD:
+     * FW version is older than the major version supported by BDF.
+     */
+    WMI_BDF_VERSION_FW_TOO_OLD = 4,
+
+    /* WMI_BDF_VERSION_FW_TOO_NEW:
+     * FW version is newer than the minor version supported by BDF.
+     */
+    WMI_BDF_VERSION_FW_TOO_NEW = 5,
+} wmi_bdf_version_status_type;
+
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_service_ready_ext2_event_fixed_param.*/
 
@@ -3215,6 +3250,17 @@ typedef struct {
      * Number of peers support default flowqs
      */
     A_UINT32 default_num_msduq_supported_per_tid;
+
+    /*
+     * Indoor/Outdoor specification for AFC support -
+     * refer to WMI_AFC_FEATURE_6G_DEPLOYMENT_TYPE enum
+     */
+    A_UINT32 afc_deployment_type;
+
+    /*
+     * Board data check report. Please see wmi_hw_bd_status_type enum values.
+     */
+    A_UINT32 hw_bd_status;
 
     /* Followed by next TLVs:
      *     WMI_DMA_RING_CAPABILITIES          dma_ring_caps[];
@@ -4179,7 +4225,19 @@ typedef struct {
      *      Refer to the below definitions of the
      *      WMI_RSRC_CFG_HOST_SERVICE_FLAG_REG_DISCARD_REQ_ID_CHECK_GET
      *      and _SET macros.
-     *  Bits 31:10 - Reserved
+     *  Bit 10
+     *      This bit will be set when host wants to enable indoor for AFC
+     *      when this bit is set to 0 indoor mode not enabled
+     *      when this bit is set to 1 indoor mode is enabled
+     *      WMI_RSRC_CFG_HOST_SERVICE_FLAG_AFC_INDOOR_SUPPORT_CHECK_GET
+     *      and SET macros
+     *  Bit 11
+     *      This bit will be set when host wants to enable outdoor for AFC
+     *      when this bit is set to 0 outdoor mode not enabled
+     *      when this bit is set to 1 outdoor mode is enabled
+     *      WMI_RSRC_CFG_HOST_SERVICE_FLAG_AFC_OUTDOOR_SUPPORT_CHECK_GET
+     *      and SET macros.
+     *  Bits 31:12 - Reserved
      */
     A_UINT32 host_service_flags;
 
@@ -4557,6 +4615,16 @@ typedef struct {
     WMI_GET_BITS(host_service_flags, 9, 1)
 #define WMI_RSRC_CFG_HOST_SERVICE_FLAG_REG_DISCARD_AFC_REQ_ID_CHECK_SET(host_service_flags, val) \
     WMI_SET_BITS(host_service_flags, 9, 1, val)
+
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_AFC_INDOOR_SUPPORT_CHECK_GET(host_service_flags) \
+    WMI_GET_BITS(host_service_flags, 10, 1)
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_AFC_INDOOR_SUPPORT_CHECK_SET(host_service_flags, val) \
+    WMI_SET_BITS(host_service_flags, 10, 1, val)
+
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_AFC_OUTDOOR_SUPPORT_CHECK_GET(host_service_flags) \
+    WMI_GET_BITS(host_service_flags, 11, 1)
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_AFC_OUTDOOR_SUPPORT_CHECK_SET(host_service_flags, val) \
+    WMI_SET_BITS(host_service_flags, 11, 1, val)
 
 #define WMI_RSRC_CFG_CARRIER_CFG_CHARTER_ENABLE_GET(carrier_config) \
     WMI_GET_BITS(carrier_config, 0, 1)
