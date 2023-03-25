@@ -246,9 +246,12 @@
  * 3.118 Add HTT_T2H_MSG_TYPE_RX_DATA_IND and _SOFT_UMAC_TX_COMPL_IND defs.
  * 3.119 Add RX_PEER_META_DATA V1A and V1B defs.
  * 3.120 Add HTT_H2T_MSG_TYPE_PRIMARY_LINK_PEER_MIGRATE_IND, _RESP defs.
+ * 3.121 Add HTT_T2H_MSG_TYPE_PEER_AST_OVERRIDE_INDEX_IND def.
+ * 3.122 Add is_umac_hang flag in H2T UMAC_HANG_RECOVERY_SOC_START_PRE_RESET msg
+ * 3.123 Add HTT_OPTION_TLV_TCL_METADATA_V21 def.
  */
 #define HTT_CURRENT_VERSION_MAJOR 3
-#define HTT_CURRENT_VERSION_MINOR 120
+#define HTT_CURRENT_VERSION_MINOR 123
 
 #define HTT_NUM_TX_FRAG_DESC  1024
 
@@ -561,10 +564,21 @@ PREPACK struct htt_option_tlv_support_tx_msdu_desc_ext_t {
  * supported by the host.  If the target doesn't provide a
  * HTT_OPTION_TLV_TAG_TCL_METADATA_VER in the VERSION_CONF message, it
  * is implicitly understood that the V1 TCL metadata shall be used.
+ *
+ * Feb 2023: Added version HTT_OPTION_TLV_TCL_METADATA_V21 = 21
+ * read as version 2.1. We added support for Dynamic AST Index Allocation
+ * for Alder+Pine in version 2.1. For HTT_OPTION_TLV_TCL_METADATA_V2 = 2
+ * we will retain older behavior of making sure the AST Index for SAWF
+ * in Pine is allocated using wifitool ath2 setUnitTestCmd 0x48 2 536 1
+ * and the FW will crash in wal_tx_de_fast.c. For version 2.1 and
+ * above we will use htt_tx_tcl_svc_class_id_metadata.ast_index
+ * in TCLV2 command and do the dynamic AST allocations.
  */
 enum HTT_OPTION_TLV_TCL_METADATA_VER_VALUES {
     HTT_OPTION_TLV_TCL_METADATA_V1 = 1,
     HTT_OPTION_TLV_TCL_METADATA_V2 = 2,
+    /* values 3-20 reserved */
+    HTT_OPTION_TLV_TCL_METADATA_V21 = 21,
 };
 
 PREPACK struct htt_option_tlv_tcl_metadata_ver_t {
@@ -781,6 +795,7 @@ typedef enum {
     HTT_STATS_TX_PDEV_MLO_ABORT_TAG                = 177, /* htt_tx_pdev_stats_mlo_abort_tlv_v */
     HTT_STATS_TX_PDEV_MLO_TXOP_ABORT_TAG           = 178, /* htt_tx_pdev_stats_mlo_txop_abort_tlv_v */
     HTT_STATS_UMAC_SSR_TAG                         = 179, /* htt_umac_ssr_stats_tlv */
+    HTT_STATS_PEER_BE_OFDMA_STATS_TAG              = 180, /* htt_peer_be_ofdma_stats_tlv */
 
 
     HTT_STATS_MAX_TAG,
@@ -2568,7 +2583,8 @@ typedef struct {
         type:          2, /* vdev_id based or peer_id or svc_id or global seq based */
         valid_htt_ext: 1, /* If set, tcl_exit_base->host_meta_info is valid */
         svc_class_id:  8,
-        rsvd:          5,
+        ast_index:     3, /* Indicates to firmware the AST index to be used for Pine for AST Override */
+        rsvd:          2,
         padding:      16; /* These 16 bits cannot be used by FW for the tcl command */
 } htt_tx_tcl_svc_class_id_metadata;
 
@@ -9907,10 +9923,10 @@ PREPACK struct htt_h2t_sawf_def_queues_map_report_req {
 
 /**
  * @brief Format of shared memory between Host and Target
- *        for UMAC hang recovery feature messaging.
+ *        for UMAC recovery feature messaging.
  * @details
  *  This is shared memory between Host and Target allocated
- *  and used in chips where UMAC hang recovery feature is supported.
+ *  and used in chips where UMAC recovery feature is supported.
  *  This shared memory is allocated per SOC level by Host since each
  *  SOC's target Q6FW needs to communicate independently to the Host
  *  through its own shared memory.
@@ -9928,11 +9944,12 @@ PREPACK struct htt_h2t_sawf_def_queues_map_report_req {
  *          b'1     - do_post_reset_start
  *          b'2     - do_post_reset_complete
  *          b'3     - initiate_umac_recovery
- *          b'4:31  - rsvd_t2h
+ *          b'4     - initiate_target_recovery_sync_using_umac
+ *          b'5:31  - rsvd_t2h
  * dword2 - b'0     - pre_reset_done
  *          b'1     - post_reset_start_done
  *          b'2     - post_reset_complete_done
- *          b'3     - start_pre_reset
+ *          b'3     - start_pre_reset (deprecated)
  *          b'4:31  - rsvd_h2t
  */
 PREPACK typedef struct {
@@ -9943,18 +9960,23 @@ PREPACK typedef struct {
          * BIT [0]        :- T2H msg to do pre-reset
          * BIT [1]        :- T2H msg to do post-reset start
          * BIT [2]        :- T2H msg to do post-reset complete
-         * BIT [3]        :- T2H msg to initiate UMAC recovery sequence.
-         *                   This is needed to synchronize UMAC recovery
-         *                   across all SOCs.
-         * BIT [31 : 4]   :- reserved
+         * BIT [3]        :- T2H msg to indicate to Host that
+         *                   a trigger request for MLO UMAC Recovery
+         *                   is received for UMAC hang.
+         * BIT [4]        :- T2H msg to indicate to Host that
+         *                   a trigger request for MLO UMAC Recovery
+         *                   is received for Mode-1 Target Recovery.
+         * BIT [31 : 5]   :- reserved
          */
         A_UINT32 t2h_msg;
         struct {
-            A_UINT32 do_pre_reset             :      1, /* BIT [0]      */
-                     do_post_reset_start      :      1, /* BIT [1]      */
-                     do_post_reset_complete   :      1, /* BIT [2]      */
-                     initiate_umac_recovery   :      1, /* BIT [3]      */
-                     rsvd_t2h                 :     28; /* BIT [31 : 4] */
+            A_UINT32
+                do_pre_reset:                              1, /* BIT [0]    */
+                do_post_reset_start:                       1, /* BIT [1]    */
+                do_post_reset_complete:                    1, /* BIT [2]    */
+                initiate_umac_recovery:                    1, /* BIT [3]    */
+                initiate_target_recovery_sync_using_umac:  1, /* BIT [4]    */
+                rsvd_t2h:                                 27; /* BIT [31:5] */
         };
     };
 
@@ -9963,10 +9985,7 @@ PREPACK typedef struct {
          * BIT [0]        :- H2T msg to send pre-reset done
          * BIT [1]        :- H2T msg to send post-reset start done
          * BIT [2]        :- H2T msg to send post-reset complete done
-         * BIT [3]        :- H2T msg to start pre-reset.
-         *                   This is expected only after T2H
-         *                   initiate_umac_recovery was received by Host
-         *                   from one of the SOCs.
+         * BIT [3]        :- H2T msg to start pre-reset. This is deprecated.
          * BIT [31 : 4]   :- reserved
          */
         A_UINT32 h2t_msg;
@@ -10031,6 +10050,18 @@ PREPACK typedef struct {
     do { \
         HTT_CHECK_SET_VAL(HTT_UMAC_HANG_RECOVERY_MSG_SHMEM_INITIATE_UMAC_RECOVERY, _val); \
         ((word1) |= ((_val) << HTT_UMAC_HANG_RECOVERY_MSG_SHMEM_INITIATE_UMAC_RECOVERY_S));\
+    } while (0)
+
+/* dword1 - b'4 - initiate_target_recovery_sync_using_umac */
+#define HTT_UMAC_HANG_RECOVERY_MSG_SHMEM_INITIATE_TARGET_RECOVERY_SYNC_USING_UMAC_M 0x00000010
+#define HTT_UMAC_HANG_RECOVERY_MSG_SHMEM_INITIATE_TARGET_RECOVERY_SYNC_USING_UMAC_S 4
+#define HTT_UMAC_HANG_RECOVERY_MSG_SHMEM_INITIATE_TARGET_RECOVERY_SYNC_USING_UMAC_GET(word1) \
+    (((word1) & HTT_UMAC_HANG_RECOVERY_MSG_SHMEM_INITIATE_TARGET_RECOVERY_SYNC_USING_UMAC_M) >> \
+     HTT_UMAC_HANG_RECOVERY_MSG_SHMEM_INITIATE_TARGET_RECOVERY_SYNC_USING_UMAC_S)
+#define HTT_UMAC_HANG_RECOVERY_MSG_SHMEM_INITIATE_TARGET_RECOVERY_SYNC_USING_UMAC_SET(word1, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_UMAC_HANG_RECOVERY_MSG_SHMEM_INITIATE_TARGET_RECOVERY_SYNC_USING_UMAC, _val); \
+        ((word1) |= ((_val) << HTT_UMAC_HANG_RECOVERY_MSG_SHMEM_INITIATE_TARGET_RECOVERY_SYNC_USING_UMAC_S));\
     } while (0)
 
 /* dword2 - b'0 - pre_reset_done */
@@ -10196,12 +10227,13 @@ PREPACK typedef struct {
  *  and HTT_H2T_MSG_TYPE_UMAC_HANG_RECOVERY_PREREQUISITE_SETUP was sent
  *  beforehand.
  *
- * |31                                       9|8|7            0|
+ * |31                                    10|9|8|7            0|
  * |-----------------------------------------------------------|
- * |                 reserved                 |I|   msg_type   |
+ * |                 reserved               |U|I|   msg_type   |
  * |-----------------------------------------------------------|
  * Where:
  *     I = is_initiator
+ *     U = is_umac_hang
  *
  * The message is interpreted as follows:
  * dword0 - b'0:7   - msg_type
@@ -10210,13 +10242,16 @@ PREPACK typedef struct {
  *                    execute the UMAC-recovery in context of the Initiator or
  *                    Non-Initiator.
  *                    The value zero indicates this target is Non-Initiator.
- *          b'9:31  - reserved.
+ *          b'9     - is_umac_hang: indicates whether MLO UMAC recovery
+ *                    executed in context of UMAC hang or Target recovery.
+ *          b'10:31 - reserved.
  */
 
 PREPACK typedef struct {
     A_UINT32 msg_type       : 8,
              is_initiator   : 1,
-             reserved       : 23;
+             is_umac_hang   : 1,
+             reserved       : 22;
 } POSTPACK htt_h2t_umac_hang_recovery_start_pre_reset_t;
 
 #define HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_BYTES \
@@ -10233,6 +10268,17 @@ PREPACK typedef struct {
     do { \
         HTT_CHECK_SET_VAL(HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_IS_INITIATOR, _val); \
         ((word0) |= ((_val) << HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_IS_INITIATOR_S));\
+    } while (0)
+
+#define HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_IS_UMAC_HANG_M 0x00000200
+#define HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_IS_UMAC_HANG_S 9
+#define HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_IS_UMAC_HANG_GET(word0) \
+    (((word0) & HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_IS_UMAC_HANG_M) >> \
+     HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_IS_UMAC_HANG_S)
+#define HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_IS_UMAC_HANG_SET(word0, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_IS_UMAC_HANG, _val); \
+        ((word0) |= ((_val) << HTT_H2T_UMAC_HANG_RECOVERY_START_PRE_RESET_IS_UMAC_HANG_S));\
     } while (0)
 
 
@@ -10695,6 +10741,7 @@ enum htt_t2h_msg_type {
     HTT_T2H_MSG_TYPE_RX_DATA_IND                   = 0x35,
     HTT_T2H_MSG_TYPE_SOFT_UMAC_TX_COMPL_IND        = 0x36,
     HTT_T2H_MSG_TYPE_PRIMARY_LINK_PEER_MIGRATE_IND = 0x37,
+    HTT_T2H_MSG_TYPE_PEER_AST_OVERRIDE_INDEX_IND   = 0x38,
 
 
     HTT_T2H_MSG_TYPE_TEST,
@@ -15360,7 +15407,7 @@ struct htt_t2h_tx_rate_stats_info { /* 2 words */
          *  dot11ba This field is the rate:
          *      0: LDR
          *      1: HDR
-         *      2: Q2Q proprietary rate
+         *      2: proprietary rate
          */
         transmit_mcs             :  4, /* [15:12] */
         /* ofdma_transmission:
@@ -18992,9 +19039,11 @@ struct htt_ul_ofdma_user_info_v0 {
 };
 
 #define HTT_UL_OFDMA_USER_INFO_V0_BITMAP_W0 \
-    A_UINT32 w0_fw_rsvd:30; \
+    A_UINT32 w0_fw_rsvd:29; \
+    A_UINT32 w0_manual_ulofdma_trig:1; \
     A_UINT32 w0_valid:1; \
     A_UINT32 w0_version:1;
+
 struct htt_ul_ofdma_user_info_v0_bitmap_w0 {
     HTT_UL_OFDMA_USER_INFO_V0_BITMAP_W0
 };
@@ -19083,6 +19132,9 @@ enum HTT_UL_OFDMA_TRIG_TYPE {
 
 #define HTT_UL_OFDMA_USER_INFO_V0_W0_FW_INTERNAL_M  0x0000ffff
 #define HTT_UL_OFDMA_USER_INFO_V0_W0_FW_INTERNAL_S  0
+
+#define HTT_UL_OFDMA_USER_INFO_V0_W0_MANUAL_ULOFDMA_TRIG_M 0x20000000
+#define HTT_UL_OFDMA_USER_INFO_V0_W0_MANUAL_ULOFDMA_TRIG_S 29
 
 #define HTT_UL_OFDMA_USER_INFO_V0_W0_VALID_M 0x40000000
 #define HTT_UL_OFDMA_USER_INFO_V0_W0_VALID_S 30
@@ -21057,7 +21109,7 @@ typedef struct {
  * This CoDel MSDU queue latencies array whose location and number of
  * elements are specified by this HTT_T2H message consists of 16-bit elements
  * that each specify a statistical summary (min) of a MSDU queue's latency,
- * using microseconds units.
+ * using milliseconds units.
  */
 #define HTT_CODEL_MSDUQ_LATENCIES_ARRAY_ELEM_BYTES 2
 
@@ -21554,6 +21606,131 @@ typedef struct {
             HTT_CHECK_SET_VAL(HTT_H2T_PRIMARY_LINK_PEER_MIGRATE_ML_PEER_ID, _val); \
             ((_var) |= ((_val) << HTT_H2T_PRIMARY_LINK_PEER_MIGRATE_ML_PEER_ID_S));\
         } while (0)
+
+/**
+ * @brief target -> host rx peer AST override message defenition
+ *
+ * MSG_TYPE => HTT_T2H_MSG_TYPE_PEER_AST_OVERRIDE_INDEX_IND
+ *
+ * @details
+ * Format inherits parts of the HTT_T2H_MSG_TYPE_PEER_MAP_V3 published above
+ * where in the dummy ast index is provided to the host.
+ * This new message below is sent to the host at run time from the TX_DE
+ * exception path when a SAWF flow is detected for a peer.
+ * This is sent up once per SAWF peer.
+ * This layout assumes the target operates as little-endian.
+ *
+ * |31             24|23                16|15              8|7               0|
+ * |--------------------------------------+-----------------+-----------------|
+ * |              SW peer ID              |     vdev ID     |     msg type    |
+ * |-----------------+--------------------+-----------------+-----------------|
+ * |    MAC addr 3   |    MAC addr 2      |    MAC addr 1   |    MAC addr 0   |
+ * |-----------------+--------------------+-----------------+-----------------|
+ * |          dummy AST Index #1          |    MAC addr 5   |    MAC addr 4   |
+ * |--------------------------------------+-----------------+-----------------|
+ * |              reserved                |      dummy AST Index #2           |
+ * |--------------------------------------+-----------------------------------|
+ *
+ * The following field definitions describe the format of the peer ast override
+ * index  messages sent from the target to the host.
+ *   - MSG_TYPE
+ *     Bits 7:0
+ *     Purpose: identifies this as a peer map v3 message
+ *     Value: 0x38 (HTT_T2H_MSG_TYPE_PEER_AST_OVERRIDE_INDEX_IND)
+ *   - VDEV_ID
+ *     Bits 15:8
+ *     Purpose: Indicates which virtual device the peer is associated with.
+ *   - SW_PEER_ID
+ *     Bits 31:16
+ *     Purpose: The peer ID (index) that WAL has allocated for this peer.
+ *   - MAC_ADDR_L32
+ *     Bits 31:0
+ *     Purpose: Identifies which peer node the peer ID is for.
+ *     Value: lower 4 bytes of peer node's MAC address
+ *   - MAC_ADDR_U16
+ *     Bits 15:0
+ *     Purpose: Identifies which peer node the peer ID is for.
+ *     Value: upper 2 bytes of peer node's MAC address
+ *   - AST_INDEX1
+ *     Bits 31:16
+ *     Purpose: The 1st extra AST index used to identify user defined MSDUQ
+ *   - AST_INDEX2
+ *     Bits 15:0
+ *     Purpose: The 2nd extra AST index used to identify user defined MSDUQ
+*/
+
+/* dword 0 */
+#define HTT_PEER_AST_OVERRIDE_SW_PEER_ID_M   0xffff0000
+#define HTT_PEER_AST_OVERRIDE_SW_PEER_ID_S   16
+#define HTT_PEER_AST_OVERRIDE_VDEV_ID_M      0x0000ff00
+#define HTT_PEER_AST_OVERRIDE_VDEV_ID_S      8
+/* dword 1 */
+#define HTT_PEER_AST_OVERRIDE_MAC_ADDR_L32_M 0xffffffff
+#define HTT_PEER_AST_OVERRIDE_MAC_ADDR_L32_S 0
+/* dword 2 */
+#define HTT_PEER_AST_OVERRIDE_MAC_ADDR_U16_M 0x0000ffff
+#define HTT_PEER_AST_OVERRIDE_MAC_ADDR_U16_S 0
+#define HTT_PEER_AST_OVERRIDE_AST_INDEX1_M   0xffff0000
+#define HTT_PEER_AST_OVERRIDE_AST_INDEX1_S   16
+/* dword 3 */
+#define HTT_PEER_AST_OVERRIDE_AST_INDEX2_M   0x0000ffff
+#define HTT_PEER_AST_OVERRIDE_AST_INDEX2_S   0
+
+#define HTT_PEER_AST_OVERRIDE_VDEV_ID_SET(word, value)           \
+    do {                                                      \
+        HTT_CHECK_SET_VAL(HTT_PEER_AST_OVERRIDE_VDEV_ID, value); \
+        (word) |= (value)  << HTT_PEER_AST_OVERRIDE_VDEV_ID_S;   \
+    } while (0)
+#define HTT_PEER_AST_OVERRIDE_VDEV_ID_GET(word) \
+    (((word) & HTT_PEER_AST_OVERRIDE_VDEV_ID_M) >> HTT_PEER_AST_OVERRIDE_VDEV_ID_S)
+
+#define HTT_PEER_AST_OVERRIDE_SW_PEER_ID_SET(word, value)            \
+    do {                                                          \
+        HTT_CHECK_SET_VAL(HTT_PEER_AST_OVERRIDE_SW_PEER_ID, value);  \
+        (word) |= (value)  << HTT_PEER_AST_OVERRIDE_SW_PEER_ID_S;    \
+    } while (0)
+#define HTT_PEER_AST_OVERRIDE_SW_PEER_ID_GET(word) \
+    (((word) & HTT_PEER_AST_OVERRIDE_SW_PEER_ID_M) >> HTT_PEER_AST_OVERRIDE_SW_PEER_ID_S)
+
+#define HTT_PEER_AST_OVERRIDE_MAC_ADDR_L32_SET(word, value)            \
+    do {                                                          \
+        HTT_CHECK_SET_VAL(HTT_PEER_AST_OVERRIDE_MAC_ADDR_L32, value);  \
+        (word) |= (value)  << HTT_PEER_AST_OVERRIDE_MAC_ADDR_L32_S;    \
+    } while (0)
+#define HTT_PEER_AST_OVERRIDE_MAC_ADDR_L32_GET(word) \
+    (((word) & HTT_PEER_AST_OVERRIDE_MAC_ADDR_L32_M) >> HTT_PEER_AST_OVERRIDE_MAC_ADDR_L32_S)
+
+#define HTT_PEER_AST_OVERRIDE_MAC_ADDR_U16_SET(word, value)            \
+    do {                                                          \
+        HTT_CHECK_SET_VAL(HTT_PEER_AST_OVERRIDE_MAC_ADDR_U16, value);  \
+        (word) |= (value)  << HTT_PEER_AST_OVERRIDE_MAC_ADDR_U16_S;    \
+    } while (0)
+#define HTT_PEER_AST_OVERRIDE_MAC_ADDR_U16_GET(word) \
+    (((word) & HTT_PEER_AST_OVERRIDE_MAC_ADDR_U16_M) >> HTT_PEER_AST_OVERRIDE_MAC_ADDR_U16_S)
+
+#define HTT_PEER_AST_OVERRIDE_AST_INDEX1_SET(word, value)            \
+    do {                                                           \
+        HTT_CHECK_SET_VAL(HTT_PEER_AST_OVERRIDE_AST_INDEX1, value);  \
+        (word) |= (value)  << HTT_PEER_AST_OVERRIDE_AST_INDEX1_S;    \
+    } while (0)
+#define HTT_PEER_AST_OVERRIDE_AST_INDEX1_GET(word) \
+    (((word) & HTT_PEER_AST_OVERRIDE_AST_INDEX1_M) >> HTT_PEER_AST_OVERRIDE_AST_INDEX1_S)
+
+
+#define HTT_PEER_AST_OVERRIDE_AST_INDEX2_SET(word, value)            \
+    do {                                                           \
+        HTT_CHECK_SET_VAL(HTT_PEER_AST_OVERRIDE_AST_INDEX2, value);  \
+        (word) |= (value)  << HTT_PEER_AST_OVERRIDE_AST_INDEX2_S;    \
+    } while (0)
+#define HTT_PEER_AST_OVERRIDE_AST_INDEX2_GET(word) \
+    (((word) & HTT_PEER_AST_OVERRIDE_AST_INDEX2_M) >> HTT_PEER_AST_OVERRIDE_AST_INDEX2_S)
+
+
+#define HTT_PEER_AST_OVERRIDE_MAC_ADDR_WORD_BASE_OFFSET    4  /* bytes */
+#define HTT_PEER_AST_OVERRIDE_DUMMY_AST1_WORD_BASE_OFFSET  8  /* bytes */
+#define HTT_PEER_AST_OVERRIDE_DUMMY_AST2_WORD_BASE_OFFSET 12  /* bytes */
+
+#define HTT_PEER_AST_OVERRIDE_INDEX_IND_BYTES             16
 
 
 
