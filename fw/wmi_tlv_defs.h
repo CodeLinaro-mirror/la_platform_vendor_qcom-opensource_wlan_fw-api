@@ -1381,6 +1381,12 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_mlo_set_link_bss_params_cmd_fixed_param,
     WMITLV_TAG_STRUC_wmi_mlo_link_switch_req_evt_fixed_param,
     WMITLV_TAG_STRUC_wmi_mlo_link_switch_cnf_fixed_param,
+    WMITLV_TAG_STRUC_wmi_mlo_primary_link_peer_migration_fixed_param,
+    WMITLV_TAG_STRUC_wmi_mlo_new_primary_link_peer_info,
+    WMITLV_TAG_STRUC_wmi_mlo_primary_link_peer_migration_compl_fixed_param,
+    WMITLV_TAG_STRUC_wmi_mlo_primary_link_peer_migration_status,
+    WMITLV_TAG_STRUC_wmi_atf_group_info_v2,
+    WMITLV_TAG_STRUC_wmi_atf_peer_info_v2,
 } WMITLV_TAG_ID;
 /*
  * IMPORTANT: Please add _ALL_ WMI Commands Here.
@@ -1910,6 +1916,7 @@ typedef enum {
     OP(WMI_VENDOR_PDEV_CMDID) \
     OP(WMI_VENDOR_VDEV_CMDID) \
     OP(WMI_VENDOR_PEER_CMDID) \
+    OP(WMI_MLO_PRIMARY_LINK_PEER_MIGRATION_CMDID) \
     /* add new CMD_LIST elements above this line */
 
 
@@ -2221,6 +2228,8 @@ typedef enum {
     OP(WMI_VENDOR_VDEV_EVENTID) \
     OP(WMI_VENDOR_PEER_EVENTID) \
     OP(WMI_PDEV_SET_RF_PATH_RESP_EVENTID) \
+    OP(WMI_ROAM_SYNCH_KEY_EVENTID) \
+    OP(WMI_MLO_PRIMARY_LINK_PEER_MIGRATION_EVENTID) \
     /* add new EVT_LIST elements above this line */
 
 
@@ -4477,7 +4486,8 @@ WMITLV_CREATE_PARAM_STRUC(WMI_FWTEST_CMDID);
 /* ATF PEER REQUEST commands. */
 #define WMITLV_TABLE_WMI_PEER_ATF_REQUEST_CMDID(id,op,buf,len) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_peer_atf_request_fixed_param, wmi_peer_atf_request_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
-WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_atf_peer_info, peer_info, WMITLV_SIZE_VAR)
+WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_atf_peer_info, peer_info, WMITLV_SIZE_VAR) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_atf_peer_info_v2, peer_info_v2, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_PEER_ATF_REQUEST_CMDID);
 
 #define WMITLV_TABLE_WMI_VDEV_TID_LATENCY_CONFIG_CMDID(id,op,buf,len) \
@@ -4493,7 +4503,8 @@ WMITLV_CREATE_PARAM_STRUC(WMI_PEER_TID_LATENCY_CONFIG_CMDID);
 /* ATF Group Request commands */
 #define WMITLV_TABLE_WMI_ATF_SSID_GROUPING_REQUEST_CMDID(id,op,buf,len) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_atf_ssid_grp_request_fixed_param, wmi_atf_ssid_grp_request_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
-    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_atf_group_info, group_info, WMITLV_SIZE_VAR)
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_atf_group_info, group_info, WMITLV_SIZE_VAR) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_atf_group_info_v2, group_info_v2, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_ATF_SSID_GROUPING_REQUEST_CMDID);
 
 /* ATF Group WMM Request commands */
@@ -5394,13 +5405,16 @@ WMITLV_CREATE_PARAM_STRUC(WMI_VDEV_PAUSE_CMDID);
 
 /* pdev,vdev,peer cmd messages for tunneling vendor-specific contents */
 #define WMITLV_TABLE_WMI_VENDOR_PDEV_CMDID(id,op,buf,len) \
-    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_vendor_cmd_fixed_param, wmi_pdev_vendor_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_vendor_cmd_fixed_param, wmi_pdev_vendor_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_UINT32, A_UINT32, opaque_vendor_var_len_data, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_VENDOR_PDEV_CMDID);
 #define WMITLV_TABLE_WMI_VENDOR_VDEV_CMDID(id,op,buf,len) \
-    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_vdev_vendor_cmd_fixed_param, wmi_vdev_vendor_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_vdev_vendor_cmd_fixed_param, wmi_vdev_vendor_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_UINT32, A_UINT32, opaque_vendor_var_len_data, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_VENDOR_VDEV_CMDID);
 #define WMITLV_TABLE_WMI_VENDOR_PEER_CMDID(id,op,buf,len) \
-    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_peer_vendor_cmd_fixed_param, wmi_peer_vendor_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_peer_vendor_cmd_fixed_param, wmi_peer_vendor_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_UINT32, A_UINT32, opaque_vendor_var_len_data, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_VENDOR_PEER_CMDID);
 
 /* SET MLO link BSS param */
@@ -5757,6 +5771,11 @@ WMITLV_CREATE_PARAM_STRUC(WMI_ROAM_EVENTID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_roam_ml_key_material_param, ml_key_material, WMITLV_SIZE_VAR) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_pdev_band_to_mac, mac_freq_mapping, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_ROAM_SYNCH_EVENTID);
+
+/* Roam Synch key Event */
+#define WMITLV_TABLE_WMI_ROAM_SYNCH_KEY_EVENTID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_roam_ml_key_material_param, ml_key_material, WMITLV_SIZE_VAR)
+WMITLV_CREATE_PARAM_STRUC(WMI_ROAM_SYNCH_KEY_EVENTID);
 
 /* Roam Synch frame Event */
 #define WMITLV_TABLE_WMI_ROAM_SYNCH_FRAME_EVENTID(id,op,buf,len) \
@@ -7351,19 +7370,34 @@ WMITLV_CREATE_PARAM_STRUC(WMI_MLO_LINK_DISABLE_REQUEST_EVENTID);
 
 /* pdev,vdev,peer event messages for tunneling vendor-specific contents */
 #define WMITLV_TABLE_WMI_VENDOR_PDEV_EVENTID(id,op,buf,len) \
-    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_vendor_event_fixed_param, wmi_pdev_vendor_event_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_vendor_event_fixed_param, wmi_pdev_vendor_event_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_UINT32, A_UINT32, opaque_vendor_var_len_data, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_VENDOR_PDEV_EVENTID);
 #define WMITLV_TABLE_WMI_VENDOR_VDEV_EVENTID(id,op,buf,len) \
-    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_vdev_vendor_event_fixed_param, wmi_vdev_vendor_event_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_vdev_vendor_event_fixed_param, wmi_vdev_vendor_event_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_UINT32, A_UINT32, opaque_vendor_var_len_data, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_VENDOR_VDEV_EVENTID);
 #define WMITLV_TABLE_WMI_VENDOR_PEER_EVENTID(id,op,buf,len) \
-    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_peer_vendor_event_fixed_param, wmi_peer_vendor_event_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_peer_vendor_event_fixed_param, wmi_peer_vendor_event_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_UINT32, A_UINT32, opaque_vendor_var_len_data, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_VENDOR_PEER_EVENTID);
 
 /* link switch event */
 #define WMITLV_TABLE_WMI_MLO_LINK_SWITCH_REQUEST_EVENTID(id,op,buf,len) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_mlo_link_switch_req_evt_fixed_param, wmi_mlo_link_switch_req_evt_fixed_param, fixed_param, WMITLV_SIZE_FIX)
 WMITLV_CREATE_PARAM_STRUC(WMI_MLO_LINK_SWITCH_REQUEST_EVENTID);
+
+/* MLO Primary Link Peer Migration command */
+#define WMITLV_TABLE_WMI_MLO_PRIMARY_LINK_PEER_MIGRATION_CMDID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_mlo_primary_link_peer_migration_fixed_param, wmi_mlo_primary_link_peer_migration_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_mlo_new_primary_link_peer_info, new_primary_link_peer_info, WMITLV_SIZE_VAR)
+WMITLV_CREATE_PARAM_STRUC(WMI_MLO_PRIMARY_LINK_PEER_MIGRATION_CMDID);
+
+/* MLO Primary Link Peer Migration Event */
+#define WMITLV_TABLE_WMI_MLO_PRIMARY_LINK_PEER_MIGRATION_EVENTID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_mlo_primary_link_peer_migration_compl_fixed_param, wmi_mlo_primary_link_peer_migration_compl_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_mlo_primary_link_peer_migration_status, primary_link_peer_migration_status, WMITLV_SIZE_VAR)
+WMITLV_CREATE_PARAM_STRUC(WMI_MLO_PRIMARY_LINK_PEER_MIGRATION_EVENTID);
 
 
 #ifdef __cplusplus
