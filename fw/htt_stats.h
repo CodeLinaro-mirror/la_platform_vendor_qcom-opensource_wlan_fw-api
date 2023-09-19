@@ -555,6 +555,42 @@ enum htt_dbg_ext_stats_type {
      */
     HTT_DBG_CODEL_STATS = 58,
 
+    /** HTT_DBG_ODD_PDEV_BE_TX_MU_OFDMA_STATS
+     * PARAMS:
+     *   - No Params
+     * RESP MSG:
+     *   - htt_tx_pdev_mpdu_stats_tlv
+     */
+    HTT_DBG_ODD_PDEV_BE_TX_MU_OFDMA_STATS = 59,
+
+    /** HTT_DBG_EXT_STATS_PDEV_UL_TRIGGER
+     * PARAMS:
+     *   - No Params
+     * RESP MSG:
+     *   - htt_rx_pdev_be_ul_ofdma_user_stats_tlv
+     */
+    HTT_DBG_ODD_UL_BE_OFDMA_STATS = 60,
+
+    /** HTT_DBG_ODD_BE_TXBF_OFDMA_STATS
+     */
+    HTT_DBG_ODD_BE_TXBF_OFDMA_STATS = 61,
+
+    /** HTT_DBG_ODD_STATS_PDEV_BE_UL_MUMIMO_TRIG_STATS
+     * PARAMS:
+     *   - No Params
+     * RESP MSG:
+     *   - htt_rx_pdev_be_ul_ofdma_user_stats_tlv
+     */
+    HTT_DBG_ODD_STATS_PDEV_BE_UL_MUMIMO_TRIG_STATS = 62,
+
+    /** HTT_DBG_MLO_SCHED_STATS
+     * PARAMS:
+     *    - No Params
+     * RESP MSG:
+     *    - htt_dbg_mlo_sched_stats_tlv
+     */
+    HTT_DBG_MLO_SCHED_STATS = 63,
+
 
     /* keep this last */
     HTT_DBG_NUM_EXT_STATS = 256,
@@ -2428,6 +2464,8 @@ typedef enum {
 #define HTT_TX_NUM_MUMIMO_GRP_INVALID_WORDS \
     (HTT_STATS_MAX_MUMIMO_GRP_SZ * HTT_STATS_MAX_INVALID_REASON_CODE)
 
+#define HTT_MAX_NUM_SBT_INTR 4
+
 typedef struct {
     htt_tlv_hdr_t tlv_hdr;
 
@@ -2480,6 +2518,19 @@ typedef struct {
     /** 11AX HE MU Standalone Freq. BSRP Trigger completed with error(s) */
     A_UINT32 standalone_ax_bsr_trigger_err[HTT_NUM_AC_WMM];
 /* END DEPRECATED FIELDS */
+    /** smart_basic_trig_sch_histogram:
+     * Count how many times the interval between predictive basic triggers
+     * sent to a given STA based on analysis of that STA's traffic patterns
+     * is within a given range:
+     *
+     * smart_basic_trig_sch_histogram[0]: SBT interval <= 10 ms
+     * smart_basic_trig_sch_histogram[1]: 10 ms < SBT interval <= 20 ms
+     * smart_basic_trig_sch_histogram[2]: 20 ms < SBT interval <= 30 ms
+     * smart_basic_trig_sch_histogram[3]: 30 ms < SBT interval <= 40 ms
+     *
+     * (Smart basic triggers are only used with intervals <= 40 ms.)
+     */
+    A_UINT32 smart_basic_trig_sch_histogram[HTT_MAX_NUM_SBT_INTR];
 } htt_tx_selfgen_cmn_stats_tlv;
 
 typedef struct {
@@ -6232,6 +6283,7 @@ typedef struct {
     A_UINT32 med_rx_idle_usec;
     A_UINT32 med_tx_idle_global_usec;
     A_UINT32 cca_obss_usec;
+    A_UINT32 pre_rx_frame_usec;
 } htt_pdev_stats_cca_counters_tlv;
 
 /* NOTE: THIS htt_pdev_cca_stats_hist_tlv STRUCTURE IS DEPRECATED,
@@ -9719,5 +9771,29 @@ typedef struct {
         };
     };
 } htt_codel_msduq_stats_tlv;
+
+/*===================== start SCHED ALGO + MLO stats ====================*/
+
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    A_UINT32 pref_link_num_sec_link_sched;
+    A_UINT32 pref_link_num_pref_link_timeout;
+    A_UINT32 pref_link_num_pref_link_sch_delay_ipc;
+    A_UINT32 pref_link_num_pref_link_timeout_ipc;
+} htt_mlo_sched_stats_tlv;
+
+/* STATS_TYPE : HTT_DBG_MLO_SCHED_STATS
+ * TLV_TAGS:
+ *   - HTT_STATS_MLO_SCHED_STATS_TAG
+ */
+/* NOTE:
+ * This structure is for documentation, and cannot be safely used directly.
+ * Instead, use the constituent TLV structures to fill/parse.
+ */
+typedef struct _htt_mlo_sched_stats {
+    htt_mlo_sched_stats_tlv  preferred_link_stats;
+} htt_mlo_sched_stats_t;
+
+/*===================== end SCHED ALGO + MLO stats ======================*/
 
 #endif /* __HTT_STATS_H__ */
