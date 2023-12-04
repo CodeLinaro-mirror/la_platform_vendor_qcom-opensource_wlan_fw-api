@@ -8292,6 +8292,15 @@ typedef struct {
      * values are specified by the HTT_WHAL_CONFIG enum type
      */
     A_UINT32 whal_config_flag;
+    /** nfcal_iteration_counts:
+     * iteration count for Home/Scan/Periodic Noise Floor calibrations
+     * nfcal_iteration_counts[0] - home NF iteration counter
+     * nfcal_iteration_counts[1] - scan NF iteration counter
+     * nfcal_iteration_counts[2] - periodic NF iteration counter
+     * These counters are not reset automatically; they are only reset
+     * when explicitly requested by the host.
+     */
+    A_UINT32 nfcal_iteration_counts[3];
 } htt_stats_phy_reset_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_phy_reset_stats_tlv htt_phy_reset_stats_tlv;

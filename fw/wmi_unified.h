@@ -1245,6 +1245,9 @@ typedef enum {
     /* WMI comamnd for standalone sounding */
     WMI_VDEV_STANDALONE_SOUND_CMDID,
 
+    /* WMI cmd used by host to send the switch response status to FW */
+    WMI_AUDIO_TRANSPORT_SWITCH_RESP_STATUS_CMDID,
+
     /*  Offload 11k related requests */
     WMI_11K_OFFLOAD_REPORT_CMDID = WMI_CMD_GRP_START_ID(WMI_GRP_11K_OFFLOAD),
     /* invoke neighbor report from FW */
@@ -2247,6 +2250,9 @@ typedef enum {
 
     /* WMI standalone command complete Event */
     WMI_VDEV_STANDALONE_SOUND_COMPLETE_EVENTID,
+
+    /* WMI evt to indicate switch type either to WLAN(XPAN) or non_WLAN(BLE) */
+    WMI_AUDIO_TRANSPORT_SWITCH_TYPE_EVENTID,
 
 
     /* GPIO Event */
@@ -9325,6 +9331,9 @@ typedef enum {
 
     /** Parameter to set PDEV level UL OFDMA RTD */
     WMI_PDEV_PARAM_UL_OFDMA_RTD,
+
+    /** Parameter to enable/disable tid0 and tid3 mapping to work 3 Link MLO */
+    WMI_PDEV_PARAM_TID_MAPPING_3LINK_MLO,
 } WMI_PDEV_PARAM;
 
 #define WMI_PDEV_ONLY_BSR_TRIG_IS_ENABLED(trig_type) WMI_GET_BITS(trig_type, 0, 1)
@@ -9851,6 +9860,14 @@ typedef struct {
     /* current 64 bit TSF timestamp */
     A_UINT32 tx_tsf_l32;
     A_UINT32 tx_tsf_u32;
+    /* info:
+     * Bit[0:2]   - band on which frame is sent, band value will be
+     *              one of the wmi_mlo_band_info_t enum constants.
+     *              Macros WMI_ROAM_BTM_RESP_MLO_BAND_INFO_GET,SET
+     *              can be reused for setting mlo band info.
+     * Bit[3:31]  - reserved
+     */
+    A_UINT32 info;
 } wmi_mgmt_tx_compl_event_fixed_param;
 
 typedef struct {
@@ -18210,6 +18227,11 @@ typedef enum {
      */
     WMI_VDEV_PARAM_DISABLE_TWT_INFO_FRAME,                /* 0xC0 */
 
+    /*
+     * Set the Recommended Max allowed active links
+     */
+    WMI_VDEV_PARAM_MLO_MAX_RECOM_ACTIVE_LINKS,            /* 0xC1 */
+
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
      * The below vdev param types are used for prototyping, and are
@@ -23366,6 +23388,8 @@ typedef enum wake_reason_e {
     WOW_REASON_COEX_CHAVD,
     /* vdev repurpose request event */
     WOW_REASON_VDEV_REPURPOSE,
+    /* STX High duty cycle event */
+    WOW_REASON_STX_WOW_HIGH_DUTY_CYCLE,
 
     /* add new WOW_REASON_ defs before this line */
     WOW_REASON_MAX,
@@ -36981,6 +37005,7 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_CSA_EVENT_STATUS_INDICATION_CMDID);
         WMI_RETURN_STRING(WMI_VDEV_SCHED_MODE_PROBE_REQ_CMDID);
         WMI_RETURN_STRING(WMI_VDEV_OOB_CONNECTION_REQ_CMDID);
+        WMI_RETURN_STRING(WMI_AUDIO_TRANSPORT_SWITCH_RESP_STATUS_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
@@ -47084,6 +47109,35 @@ typedef struct {
     /* OOB connection response type based on VDEV_OOB_CONNECT_REQ_RESP_TYPE */
     A_UINT32 connect_resp_type;
 } wmi_vdev_oob_connection_resp_event_fixed_param;
+
+typedef enum {
+    WMI_AUDIO_TRANSPORT_SWITCH_STATUS_FAIL = 0,
+    WMI_AUDIO_TRANSPORT_SWITCH_STATUS_SUCCESS,
+    WMI_AUDIO_TRANSPORT_SWITCH_STATUS_TIMEOUT,
+} WMI_AUDIO_TRANSPORT_SWITCH_RESPONSE_STATUS;
+
+typedef enum {
+    WMI_AUDIO_TRANSPORT_SWITCH_TYPE_NON_WLAN = 0,
+    WMI_AUDIO_TRANSPORT_SWITCH_TYPE_WLAN = 1,
+} WMI_AUDIO_TRANSPORT_SWITCH_TYPE;
+
+typedef struct {
+    /** TLV tag and len; tag equals
+    * WMITLV_TAG_STRUC_wmi_audio_transport_switch_type_event_fixed_param */
+    A_UINT32 tlv_header;
+    /** This indicates whether FW is requesting for switch to WLAN(XPAN) or non-WLAN(BLE) */
+    A_UINT32 switch_type;  /*see definition of WMI_AUDIO_TRANSPORT_SWITCH_TYPE */
+} wmi_audio_transport_switch_type_event_fixed_param;
+
+typedef struct {
+    /** TLV tag and len; tag equals
+    * WMITLV_TAG_STRUC_wmi_audio_transport_switch_resp_status_cmd_fixed_param */
+    A_UINT32 tlv_header;
+    /** This indicates whether switch response status is success, fail, timeout */
+    A_UINT32 switch_response_status;  /* see definition of WMI_AUDIO_TRANSPORT_SWITCH_RESPONSE_STATUS */
+    /** This indicates for which switch type (WLAN(XPAN) or non-WLAN(BLE)) the switch response status is intended to */
+    A_UINT32 switch_type;  /* see definition of WMI_AUDIO_TRANSPORT_SWITCH_TYPE */
+} wmi_audio_transport_switch_resp_status_cmd_fixed_param;
 
 
 
