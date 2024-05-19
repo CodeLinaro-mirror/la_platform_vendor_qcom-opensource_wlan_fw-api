@@ -4398,6 +4398,9 @@ typedef struct {
     A_UINT32 sched_udp_notify2;
     A_UINT32 sched_nonudp_notify1;
     A_UINT32 sched_nonudp_notify2;
+    A_UINT32 tqm_enqueue_msdu_count;
+    A_UINT32 tqm_dropped_msdu_count;
+    A_UINT32 tqm_dequeue_msdu_count;
 } htt_stats_tx_tqm_pdev_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_tqm_pdev_tlv htt_tx_tqm_pdev_stats_tlv_v;
@@ -4588,6 +4591,18 @@ typedef struct {
     A_UINT32 eapol_start_packets;
     A_UINT32 eapol_logoff_packets;
     A_UINT32 eapol_encap_asf_packets;
+    A_UINT32 m1_success;
+    A_UINT32 m1_compl_fail;
+    A_UINT32 m2_success;
+    A_UINT32 m2_compl_fail;
+    A_UINT32 m3_success;
+    A_UINT32 m3_compl_fail;
+    A_UINT32 m4_success;
+    A_UINT32 m4_compl_fail;
+    A_UINT32 g1_success;
+    A_UINT32 g1_compl_fail;
+    A_UINT32 g2_success;
+    A_UINT32 g2_compl_fail;
 } htt_stats_tx_de_eapol_packets_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_de_eapol_packets_tlv htt_tx_de_eapol_packets_stats_tlv;
@@ -7585,6 +7600,14 @@ typedef struct {
      * bin2 contains the number of sampling windows that had > 4 interrupts
      */
     A_UINT32 interrupts_hist[HTT_INTERRUPTS_LATENCY_PROFILE_MAX_HIST];
+    /* min time in us for pcycles spent on q6 core on all HW threads */
+    A_UINT32 min_pcycles_time;
+    /* max time in us for pcycles spent on q6 core on all HW threads */
+    A_UINT32 max_pcycles_time;
+    /* total time in us for pcycles spent on q6 core on all HW threads */
+    A_UINT32 tot_pcycles_time;
+    /* avg time in us for pcycles spent on q6 core on all HW threads */
+    A_UINT32 avg_pcycles_time;
 } htt_stats_latency_prof_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_latency_prof_stats_tlv htt_latency_prof_stats_tlv;

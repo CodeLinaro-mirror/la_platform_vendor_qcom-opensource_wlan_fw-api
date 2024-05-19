@@ -3464,6 +3464,11 @@ typedef struct {
 #define WMI_TARGET_CAP_ML_MONITOR_MODE_SUPPORT_SET(target_cap_flags, value) \
     WMI_SET_BITS(target_cap_flags, 14, 1, value)
 
+#define WMI_TARGET_CAP_QDATA_TX_LCE_FILTER_SUPPORT_GET(target_cap_flags) \
+    WMI_GET_BITS(target_cap_flags, 15, 1)
+#define WMI_TARGET_CAP_QDATA_TX_LCE_FILTER_SUPPORT_SET(target_cap_flags, value)\
+    WMI_SET_BITS(target_cap_flags, 15, 1, value)
+
 
 /*
  * wmi_htt_msdu_idx_to_htt_msdu_qtype GET/SET APIs
@@ -3609,7 +3614,8 @@ typedef struct {
      *      Bit12 - [ML-STA + SL-SAP]  0: not supported; 1:supported
      * Bit 13 - Support for multipass SAP
      * Bit 14 - Support for ML monitor mode
-     * Bits 31:15 - Reserved
+     * Bit 15 - Support for Qdata Tx LCE filter installation
+     * Bits 31:16 - Reserved
      */
     A_UINT32 target_cap_flags;
 
@@ -4612,8 +4618,12 @@ typedef struct {
      *           and 255 indicates an invalid service class
      *      Refer to WMI_RSRC_CFG_FLAGS2_SAWF_255_SVC_CLASS_SUPPORT_GET/SET
      *      macros.
+     *  Bit 20 - enable feature EPM (Enhanced Power Management)
+     *      0 -> disable the feature
+     *      1 -> enable the feature
+     *      Refer to the below WMI_RSRC_CFG_FLAGS2_EPM_GET/SET macros.
      *
-     *  Bits 31:20 - Reserved
+     *  Bits 31:21 - Reserved
      */
     A_UINT32 flags2;
     /** @brief host_service_flags - can be used by Host to indicate
@@ -5108,6 +5118,10 @@ typedef struct {
 #define WMI_RSRC_CFG_FLAGS2_SAWF_255_SVC_CLASS_SUPPORT_SET(flags2, value) \
     WMI_SET_BITS(flags2, 19, 1, value)
 
+#define WMI_RSRC_CFG_FLAGS2_EPM_GET(flags2) \
+    WMI_GET_BITS(flags2, 20, 1)
+#define WMI_RSRC_CFG_FLAGS2_EPM_SET(flags2, value) \
+    WMI_SET_BITS(flags2, 20, 1, value)
 
 #define WMI_RSRC_CFG_HOST_SERVICE_FLAG_NAN_IFACE_SUPPORT_GET(host_service_flags) \
     WMI_GET_BITS(host_service_flags, 0, 1)
@@ -9603,6 +9617,18 @@ typedef enum {
      * E.g. a value of 4 will result in a 1.0 dB tx power reduction.
      */
     WMI_PDEV_PARAM_PWR_REDUCTION_IN_QUARTER_DB,
+
+    WMI_PDEV_PARAM_ENABLE_CHIPSET_LOGGING,
+
+    /** SCAN MODE:
+     *  bit   | scan_mode
+     * -----------------
+     *  0     | SISO SCAN - 1x1 scan
+     *        |     If this bit is 0, then use default scan (NxN).
+     *  1-31  | Reserved.
+     */
+    WMI_PDEV_PARAM_SCAN_MODE,
+
 } WMI_PDEV_PARAM;
 
 #define WMI_PDEV_ONLY_BSR_TRIG_IS_ENABLED(trig_type) WMI_GET_BITS(trig_type, 0, 1)
@@ -22967,12 +22993,20 @@ typedef enum {
     WMI_BL_REASON_REASSOC_RSSI_REJECT,
     /* Reassoc resp with status code 17 - DENIED_NO_MORE_STAS */
     WMI_BL_REASON_REASSOC_NO_MORE_STAS,
+    WMI_BL_REASON_BASIC_RATES_MIS_MATCH, /* Status code 18 */
+    WMI_BL_REASON_EHT_NOT_SUPPORTED, /* Status code 135 */
+    WMI_BL_REASON_EXISTING_MLD_ASSOCIATION, /* Status code 130 */
+    WMI_BL_REASON_LINK_TRANSMITTED_NOT_ACCEPTED, /* Status code 139 */
+    WMI_BL_REASON_DENIED_OTHER_REASON,
+    WMI_BL_REASON_BTM_LOAD_BALANCE,
 } WMI_BLACKLIST_REASON_ID;
 
 typedef enum {
     WMI_BL_SOURCE_HOST = 1,
     WMI_BL_SOURCE_FW,
 } WMI_BLACKLIST_SOURCE_ID;
+
+#define WMI_MAX_FAILED_LINK_COMBO_COUNT 10
 
 typedef struct {
     /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_roam_blacklist_with_timeout_tlv_param */
@@ -22996,11 +23030,18 @@ typedef struct {
     /* Original timeout value in milli seconds when AP added to BL */
     A_UINT32 original_timeout;
     /*
-     * If disallow_linkid_bitmap is not 0, then means current entity
-     * is for MLD AP and bssid field is standing for MLD address.
-     * If all links for MLD AP is disallow, then the value shall be 0xffffffff
+     * The disallow link ID bitmap indicates links which should not be allowed
+     * for any assoc or partner link combination.
+     * If all links for MLD AP are disallowed, then the value shall be
+     * 0xffffffff.
      */
     A_UINT32 disallow_linkid_bitmap;
+    /* MLD address of AP */
+    wmi_mac_addr mld;
+    /* List of link combinations for which association is failed */
+    A_UINT32 ml_failed_links_combo_bitmap[WMI_MAX_FAILED_LINK_COMBO_COUNT];
+    /* Failed link combo count filled in ml_failed_links_combo_bitmap[] */
+    A_UINT32 ml_failed_link_combo_count;
 } wmi_roam_blacklist_with_timeout_tlv_param;
 
 /** WMI_ROAM_BLACKLIST_EVENT: generated whenever STA needs to move AP to blacklist for a particluar time
@@ -25646,6 +25687,15 @@ typedef enum
      */
     WMI_VENDOR_OUI_ACTION_SEND_SMPS_FRAME_WITH_OMN = 12,
 
+    /* Restrict SLO if specific vendor OUI received in beacon. */
+    WMI_VENDOR_OUI_ACTION_RESTRICT_SLO = 13,
+
+    /*
+     * Force MLSR mode if specific vendor OUI received in beacon
+     * when connect with MLO.
+     */
+    WMI_VENDOR_OUI_ACTION_FORCE_MLSR = 14,
+
 
     /* Add any action before this line */
     WMI_VENDOR_OUI_ACTION_MAX_ACTION_ID
@@ -26990,7 +27040,9 @@ typedef enum {
     /** Lower threshold for beacon-RSSI. Used to increase RX chainmask. */
     WMI_STA_SMPS_PARAM_LOWER_BRSSI_THRESH = 4,
     /** Enable/Disable DTIM 1chRx feature */
-    WMI_STA_SMPS_PARAM_DTIM_1CHRX_ENABLE = 5
+    WMI_STA_SMPS_PARAM_DTIM_1CHRX_ENABLE = 5,
+    /** Enable/Disable dynamic bw feature */
+    WMI_STA_SMPS_PARAM_DYNAMIC_BW_SWITCH = 6,
 } wmi_sta_smps_param;
 
 typedef struct {
@@ -36768,27 +36820,38 @@ typedef struct {
     /** TLV tag and len; tag equals
      *  WMITLV_TAG_STRUC_wmi_therm_throt_level_config_info */
     A_UINT32 tlv_header;
-    /**
-      * temperature sensor value in celsius when to exit to lower zone,
-      * this value can be lower than HWM of lower zone as zone overlapping
-      * is permitted by design to provide hysteresis
-      */
+    /** temp_lwm:
+     * temperature sensor value in celsius when to exit to lower zone,
+     * this value can be lower than HWM of lower zone as zone overlapping
+     * is permitted by design to provide hysteresis
+     */
     A_UINT32 temp_lwm;
-    /**
-      * temperature sensor value in celsius when to exit to higher zone,
-      * this value can be higher than LWM of higher zone as zone overlapping
-      * is permitted by design to provide hysteresis
-      */
+    /** temp_hwm:
+     * temperature sensor value in celsius when to exit to higher zone,
+     * this value can be higher than LWM of higher zone as zone overlapping
+     * is permitted by design to provide hysteresis
+     */
     A_UINT32 temp_hwm;
-    A_UINT32 dc_off_percent; /* duty cycle off percent 0-100. 0 means no off, 100 means no on (shutdown the phy) */
-    /** Disable only the transmit queues in firmware that have lower priority than value defined by prio
-       *    Prioritization:
-       *    0 = disable all data tx queues, No Prioritization defined
-       *    1 = disable BK tx queue
-       *    2 = disable BK+BE tx queues
-       *    3 = disable BK+BE+VI tx queues
-       */
+    /** dc_off_percent:
+     * duty cycle off percent 0-100.
+     * 0 means no off, 100 means no on (shutdown the phy).
+     */
+    A_UINT32 dc_off_percent;
+    /** prio:
+     * Disable only the transmit queues in firmware that have lower priority
+     * than value defined by prio.
+     *    Prioritization:
+     *    0 = disable all data tx queues, No Prioritization defined
+     *    1 = disable BK tx queue
+     *    2 = disable BK+BE tx queues
+     *    3 = disable BK+BE+VI tx queues
+     */
     A_UINT32 prio;
+    /**
+     * Pout power reduction in 0.25 dB units.
+     * For example, a value of 5 causes a power reduction of 1.25 dB.
+     */
+    A_UINT32 pout_reduction_25db;
 } wmi_therm_throt_level_config_info;
 
 typedef enum {
@@ -40196,11 +40259,18 @@ typedef struct {
     /* Original timeout value in milli seconds when AP added to BL */
     A_UINT32 original_timeout;
     /*
-     * If disallow_linkid_bitmap is not 0, then means current entity
-     * is for MLD AP and bssid field is standing for MLD address.
-     * If all links for MLD AP is disallow, then the value shall be 0xffffffff
+     * The disallow link ID bitmap indicates links which should not be allowed
+     * for any assoc or partner link combination.
+     * If all links for MLD AP are disallowed, then the value shall be
+     * 0xffffffff.
      */
     A_UINT32 disallow_linkid_bitmap;
+    /* MLD address of AP */
+    wmi_mac_addr mld;
+    /* List of link combinations for which association is failed */
+    A_UINT32 ml_failed_links_combo_bitmap[WMI_MAX_FAILED_LINK_COMBO_COUNT];
+    /* Failed link combo count filled in ml_failed_links_combo_bitmap[] */
+    A_UINT32 ml_failed_link_combo_count;
 } wmi_pdev_bssid_disallow_list_config_param;
 
 typedef enum {
@@ -41140,6 +41210,13 @@ typedef struct {
      * each bit represents.
      */
     A_UINT32 disallow_connect_modes;
+
+    /*
+     * If max_link_combo_count is non-zero, STA should try to roam to next
+     * candidate once max allowed link combinations is reached with current
+     * candidate AP.
+     */
+    A_UINT32 max_link_combo_count;
 } wmi_roam_mlo_config_cmd_fixed_param;
 
 typedef struct {
