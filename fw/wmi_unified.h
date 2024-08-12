@@ -17513,10 +17513,6 @@ typedef enum event_type_e {
     WOW_TWT_EVENT,                        /* 32 + 10 */
     WOW_DCS_INTERFERENCE_DET,             /* 32 + 11 */
     WOW_ROAM_STATS_EVENT,                 /* 32 + 12 */
-    WOW_RTT_11AZ_EVENT,                   /* 32 + 13 */
-    WOW_P2P_NOA_EVENT,                    /* 32 + 14 */
-    WOW_XGAP_EVENT,                       /* 32 + 15 */
-    WOW_PF_EVENT,                         /* 32 + 16 */
 } WOW_WAKE_EVENT_TYPE;
 
 typedef enum wake_reason_e {
@@ -17593,27 +17589,6 @@ typedef enum wake_reason_e {
     WOW_REASON_FATAL_EVENT_WAKE,
     WOW_REASON_DCS_INT_DET,
     WOW_REASON_ROAM_STATS,
-    WOW_REASON_MDNS_WAKEUP,
-    WOW_REASON_RTT_11AZ,
-    WOW_REASON_P2P_NOA_UPDATE,
-    /* When Host configured timer elapsed for delayed wakeup */
-    WOW_REASON_DELAYED_WAKEUP_HOST_CFG_TIMER_ELAPSED,
-    /* Data store list is full, so Host wakeup should be triggered */
-    WOW_REASON_DELAYED_WAKEUP_DATA_STORE_LIST_FULL,
-    /* Sched PM FW initiated termination event */
-    WOW_REASON_SCHED_PM_TERMINATED,
-    /* XGAP entry/exit response */
-    WOW_REASON_XGAP,
-    /* COEX channel avoid event */
-    WOW_REASON_COEX_CHAVD,
-    /* vdev repurpose request event */
-    WOW_REASON_VDEV_REPURPOSE,
-    /* STX High duty cycle event */
-    WOW_REASON_STX_WOW_HIGH_DUTY_CYCLE,
-    /* WoW exit reason MCC lite */
-    WOW_REASON_MCC_LITE,
-    /*if PF blocking feature enable and PF observed under WoW */
-    WOW_REASON_PF_BLOCKING_LAST_TIME,
 
     /* add new WOW_REASON_ defs before this line */
     WOW_REASON_MAX,
