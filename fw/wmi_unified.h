@@ -24071,6 +24071,7 @@ typedef enum event_type_e {
     WOW_RTT_11AZ_EVENT,                   /* 32 + 13 */
     WOW_P2P_NOA_EVENT,                    /* 32 + 14 */
     WOW_XGAP_EVENT,                       /* 32 + 15 */
+    WOW_PAGE_FAULT_EVENT,                 /* 32 + 16 */
 } WOW_WAKE_EVENT_TYPE;
 
 typedef enum wake_reason_e {
@@ -24168,6 +24169,8 @@ typedef enum wake_reason_e {
     WOW_REASON_MCC_LITE,
     /* P2P CLI detected BMISS from DFS master AP */
     WOW_REASON_P2P_CLI_DFS_AP_BMISS_DETECTED,
+    /* if Page Fault blocking feature enabled and PF observed under WoW */
+    WOW_REASON_PF_BLOCKING_LAST_TIME,
 
     /* add new WOW_REASON_ defs before this line */
     WOW_REASON_MAX,
@@ -25856,6 +25859,15 @@ typedef enum
      */
     WMI_VENDOR_OUI_ACTION_DISABLE_AUXL = 15,
 
+    /*
+     * Used to downgrade to 2 link ML connection for specific AP matchs OUI.
+     * This is the preferred name, since it specifies that the downgraded
+     * number of links is 2.
+     */
+    WMI_VENDOR_OUI_ACTION_RESTRICT_MAX_2_MLO_LINKS = 16,
+    /* alias for the above (less suitable, since it is less precise) */
+    WMI_VENDOR_OUI_ACTION_RESTRICT_MAX_MLO_LINKS =
+        WMI_VENDOR_OUI_ACTION_RESTRICT_MAX_2_MLO_LINKS,
 
     /* Add any action before this line */
     WMI_VENDOR_OUI_ACTION_MAX_ACTION_ID
@@ -38063,6 +38075,7 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_SOC_TX_PACKET_CUSTOM_CLASSIFY_CMDID);
         WMI_RETURN_STRING(WMI_SET_AP_SUSPEND_RESUME_CMDID);
         WMI_RETURN_STRING(WMI_P2P_GO_DFS_AP_CONFIG_CMDID);
+        WMI_RETURN_STRING(WMI_USD_SERVICE_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
