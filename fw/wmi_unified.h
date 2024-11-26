@@ -30164,6 +30164,20 @@ typedef struct {
                                 */
 } wmi_regulatory_rule_ext_struct;
 
+#define WMI_REG_CHAN_PRIORITY_FREQ_GET(freq_info)        WMI_GET_BITS(freq_info, 0, 16)
+#define WMI_REG_CHAN_PRIORITY_FREQ_SET(freq_info, value) WMI_SET_BITS(freq_info, 0, 16, value)
+
+typedef struct {
+    A_UINT32  tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_regulatory_chan_priority_struct */
+    A_UINT32  freq_info;
+    /* freq_info:
+     * bits 15:0 = u16 Cutoff Frequency value for Prioritization (in MHz units)
+     *             The frequencies above this value will be prioritized and
+     *             the frequencies below this value will be de-prioritized.
+     * bits 31:16 = reserved for future
+     */
+} wmi_regulatory_chan_priority_struct;
+
 typedef enum {
     WMI_REG_DFS_UNINIT_REGION = 0,
     WMI_REG_DFS_FCC_REGION    = 1,
