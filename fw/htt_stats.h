@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2021-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -809,6 +809,25 @@ enum htt_dbg_ext_stats_type {
      *    - htt_stats_pdev_aoa_tlv
      */
     HTT_DBG_EXT_STATS_PDEV_AOA = 72,
+
+    /** HTT_DBG_EXT_STATS_PDEV_FTM_TPCCAL
+     * PARAMS:
+     *   - No Params
+     * RESP MSG:
+     *    - htt_stats_pdev_ftm_tpccal_tlv
+     */
+    HTT_DBG_EXT_STATS_PDEV_FTM_TPCCAL = 73,
+
+    /** HTT_DBG_EXT_STATS_PDEV_UL_MUMIMO_ELIGIBLE
+     * PARAMS:
+     *    - No Params
+     * RESP MSG:
+     *     - htt_stats_pdev_ul_mumimo_grp_stats_tlv
+     *     - htt_stats_pdev_ul_mumimo_denylist_stats_tlv
+     *     - htt_stats_pdev_ul_mumimo_seq_term_stats_tlv
+     *     - htt_stats_pdev_ul_mumimo_hist_ineligibility_tlv
+     */
+    HTT_DBG_EXT_STATS_PDEV_UL_MUMIMO_ELIGIBLE = 74,
 
 
     /* keep this last */
@@ -2850,6 +2869,11 @@ typedef enum {
     HTT_TX_MUMIMO_GRP_INVALID_GROUP_INELIGIBLE,
     HTT_TX_MUMIMO_GRP_INVALID,
     HTT_TX_MUMIMO_GRP_INVALID_GROUP_EFF_MU_TPUT_OMBPS,
+    HTT_TX_MUMIMO_GRP_INVALID_GRP,
+    HTT_TX_MUMIMO_GRP_INVALID_TOTAL_NSS_LESS_THAN_GROUP_SIZE,
+    HTT_TX_MUMIMO_GRP_INSUFFICIENT_CANDIDATES_UL_MU_1SS_RATE,
+    HTT_TX_MUMIMO_GRP_MU_GRP_NOT_NEEDED,
+
     HTT_TX_MUMIMO_GRP_INVALID_MAX_REASON_CODE,
 } htt_tx_mumimo_grp_invalid_reason_code_stats;
 
@@ -4757,6 +4781,19 @@ typedef struct {
     A_UINT32 g1_compl_fail;
     A_UINT32 g2_success;
     A_UINT32 g2_compl_fail;
+    /* enqueue */
+    A_UINT32 m1_enq_success;
+    A_UINT32 m1_enq_fail;
+    A_UINT32 m2_enq_success;
+    A_UINT32 m2_enq_fail;
+    A_UINT32 m3_enq_success;
+    A_UINT32 m3_enq_fail;
+    A_UINT32 m4_enq_success;
+    A_UINT32 m4_enq_fail;
+    A_UINT32 g1_enq_success;
+    A_UINT32 g1_enq_fail;
+    A_UINT32 g2_enq_success;
+    A_UINT32 g2_enq_fail;
 } htt_stats_tx_de_eapol_packets_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_de_eapol_packets_tlv htt_tx_de_eapol_packets_stats_tlv;
@@ -7553,6 +7590,15 @@ typedef struct {
     A_UINT32 cv_corr_upload_total_num_users[HTT_TX_CV_CORR_MAX_NUM_COLUMNS];
     /** number of streams present in uploaded CV Correlation results buffer */
     A_UINT32 cv_corr_upload_total_num_streams[HTT_TX_CV_CORR_MAX_NUM_COLUMNS];
+
+    /** Total number of times lookahead sounding done for DL MU */
+    A_UINT32 lookahead_sounding_dl_cnt;
+    /** Total number of times lookahead sounding done for DL MU based on number of users */
+    A_UINT32 lookahead_snd_dl_num_users[HTT_TX_PDEV_STATS_NUM_BE_MUMIMO_USER_STATS];
+    /** Total number of times lookahead sounding done for UL MU */
+    A_UINT32 lookahead_sounding_ul_cnt;
+    /** Total number of times lookahead sounding done for UL MU based on number of users */
+    A_UINT32 lookahead_snd_ul_num_users[HTT_TX_PDEV_STATS_NUM_UL_MUMIMO_USER_STATS];
 } htt_stats_tx_sounding_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_sounding_stats_tlv htt_tx_sounding_stats_tlv;
@@ -9055,6 +9101,111 @@ typedef struct {
     A_INT32 phase_in_degree[HTT_STATS_PDEV_AOA_MAX_HISTOGRAM][HTT_STATS_PDEV_AOA_MAX_CHAINS];
 } htt_stats_pdev_aoa_tlv;
 
+/* STATS_TYPE: HTT_DBG_EXT_STATS_PDEV_ULMUMIMO_ELIGIBLE
+ * TLV_TAGS:
+ *  HTT_STATS_PDEV_UL_MUMIMO_GRP_STATS_TAG
+ *  HTT_STATS_PDEV_UL_MUMIMO_DENYLIST_STATS_TAG
+ *  HTT_STATS_PDEV_UL_MUMIMO_SEQ_TERM_STATS_TAG
+ *  HTT_STATS_PDEV_UL_MUMIMO_HIST_INELIGIBILITY_TAG
+ */
+
+typedef enum {
+    HTT_STATS_CANDIDATE_MU_NOT_COMPATIBLE = 1,
+    HTT_STATS_CANDIDATE_SKIP_NR_INDEX,
+    HTT_STATS_CANDIDATE_SKIP_BASIC_CHECKS_INELIGIBLE,
+    HTT_STATS_CANDIDATE_SKIP_ZERO_NSS,
+    HTT_STATS_CANDIDATE_SKIP_MCS_THRESHOLD_LIMIT,
+    HTT_STATS_CANDIDATE_SKIP_POWER_IMBALANCED,
+    HTT_STATS_CANDIDATE_SKIP_NULL_MU_RC,
+    HTT_STATS_CANDIDATE_SKIP_CV_CORR_SKIP_PEER,
+    HTT_STATS_CANDIDATE_SKIP_SEND_BAR_SET_FOR_AC_MUMIMO,
+
+    HTT_STATS_CANDIDATE_SKIP_REASON_MAX
+} htt_stats_candidate_sched_compatible_code;
+
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    /* Current Pdev id */
+    A_UINT32 pdev_id;
+    /* Group eligibility count */
+    A_UINT32 mu_grp_eligible[HTT_STATS_MAX_MUMIMO_GRP_SZ];
+    /* Group ineligibility */
+    A_UINT32 mu_grp_ineligible[HTT_STATS_MAX_MUMIMO_GRP_SZ];
+    /* Group Invalid reason */
+    A_UINT32 mu_grp_invalid[HTT_TX_NUM_MUMIMO_GRP_INVALID_WORDS];
+    /* mu_grp_candidate_skip:
+     * Sched_compatibility reason codes as listed by
+     * htt_stats_candidate_sched_compatible code
+     */
+    A_UINT32 mu_grp_candidate_skip
+        [HTT_TX_PDEV_STATS_NUM_UL_MUMIMO_USER_STATS]
+        [HTT_STATS_CANDIDATE_SKIP_REASON_MAX];
+    /* Group eligibility count for 1SS grouping */
+    A_UINT32 mu_grp_eligible_1ss[HTT_STATS_MAX_MUMIMO_GRP_SZ];
+    /* Group ineligibility fpr 1SS grouping */
+    A_UINT32 mu_grp_ineligible_1ss[HTT_STATS_MAX_MUMIMO_GRP_SZ];
+    /* Group Invalid reason for 1SS grouping */
+    A_UINT32 mu_grp_invalid_1ss[HTT_TX_NUM_MUMIMO_GRP_INVALID_WORDS];
+    /* Sched_compatibility reason code for 1SS grouping */
+    A_UINT32 mu_grp_candidate_skip_1ss
+        [HTT_TX_PDEV_STATS_NUM_UL_MUMIMO_USER_STATS]
+        [HTT_STATS_CANDIDATE_SKIP_REASON_MAX];
+} htt_stats_pdev_ulmumimo_grp_stats_tlv;
+
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+
+    /* Num of times peer denylisted for MU-MIMO transmission */
+    A_UINT32 num_peer_denylist_cnt;
+    /* Num of times peer denylisted due to trigger bitmap failure */
+    A_UINT32 trig_bitmap_fail_cnt;
+    /* Num of times peer denylisted due to trigger consecutive failure */
+    A_UINT32 trig_consecutive_fail_cnt;
+} htt_stats_pdev_ulmumimo_denylist_stats_tlv;
+
+#define HTT_STATS_SEQ_EFFICIENCY_HISTOGRAM 10
+typedef struct {
+    htt_tlv_hdr_t  tlv_hdr;
+
+    /* Num of times seq terminated for MU-MIMO transmission */
+    A_UINT32 num_terminate_seq;
+    /* Num of sequences terminated due to low qdepth */
+    A_UINT32 num_terminate_low_qdepth;
+    /* Number of sequences terminated due to sequence inefficient */
+    A_UINT32 num_terminate_seq_inefficient;
+    /* Histogram of sequence inefficiency */
+    A_UINT32 hist_seq_efficiency[HTT_STATS_SEQ_EFFICIENCY_HISTOGRAM];
+} htt_stats_pdev_ulmumimo_seq_term_stats_tlv;
+
+#define HTT_STATS_MAX_ULMUMIMO_TRIGGERS 6
+#define HTT_STATS_TXOP_HISTOGRAM_BINS 24
+#define HTT_STATS_ULMUMIMO_DUR_INTERVAL_US 500
+#define HTT_STATS_ULMUMIMO_MIN_PPDU_DUR_US 1000
+#define HTT_STATS_MAX_PPDU_DURATION_BINS 10
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+
+    /* Number of ULMUMIMO triggers */
+    A_UINT32 num_triggers[HTT_STATS_MAX_ULMUMIMO_TRIGGERS];
+    /* Txop duration history from 0 to 12 ms with interval of 500us */
+    A_UINT32 txop_history [HTT_STATS_TXOP_HISTOGRAM_BINS];
+    /* ppdu_duration_hist:
+     * PPDU Duration History (histogram)
+     * Num PPDUs from 1 to 6
+     * 0 to 6 ms with interval of 500us
+     */
+    A_UINT32 ppdu_duration_hist
+        [HTT_STATS_MAX_ULMUMIMO_TRIGGERS][HTT_STATS_MAX_PPDU_DURATION_BINS];
+    /* Ineligible Count for ULMUMIMO based on avg qdepth and txtime criteria */
+    A_UINT32 ineligible_count;
+    /* history_ineligibility:
+     * History based ineligibility counter for ULMUMIMO.
+     * Checks for 8 eligible instances of ULMUMIMO in the past 32 instances.
+     */
+    A_UINT32 history_ineligibility;
+} htt_stats_pdev_ulmumimo_hist_ineligibility_tlv;
+
+
 /* RTT VREG MASK */
 #define HTT_STATS_RTT_CHAN_CAPTURE_MASK                       0x00000001
 #define HTT_STATS_RTT_HW_FAC_MASK                             0x00000002
@@ -9085,6 +9236,224 @@ typedef struct {
 #define HTT_STATS_RTT_CAL_RXCORR_ADC_GAIN_COMP_MASK           0x00008000
 #define HTT_STATS_RTT_CAL_SPUR_FILTER_PRI_DET_COMP_MASK       0x00010000
 #define HTT_STATS_RTT_CAL_SPUR_FILTER_PRI_COMP_MASK           0x00020000
+
+
+#define HTT_STATS_TPCCAL_LAST_IDX_M 0x000000ff
+#define HTT_STATS_TPCCAL_LAST_IDX_S 0
+
+#define HTT_STATS_TPCCAL_LAST_IDX_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_LAST_IDX_M) >> \
+     HTT_STATS_TPCCAL_LAST_IDX_S)
+
+#define HTT_STATS_TPCCAL_STATS_MEASPWR_M 0x0000ffff
+#define HTT_STATS_TPCCAL_STATS_MEASPWR_S 0
+
+#define HTT_STATS_TPCCAL_STATS_MEASPWR_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_STATS_MEASPWR_M) >> \
+     HTT_STATS_TPCCAL_STATS_MEASPWR_S)
+
+#define HTT_STATS_TPCCAL_STATS_PDADC_M 0x000000ff
+#define HTT_STATS_TPCCAL_STATS_PDADC_S 0
+
+#define HTT_STATS_TPCCAL_STATS_PDADC_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_STATS_PDADC_M) >> \
+     HTT_STATS_TPCCAL_STATS_PDADC_S)
+
+#define HTT_STATS_TPCCAL_STATS_CHANNEL_M 0x0000ffff
+#define HTT_STATS_TPCCAL_STATS_CHANNEL_S 0
+
+#define HTT_STATS_TPCCAL_STATS_CHANNEL_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_STATS_CHANNEL_M) >> \
+     HTT_STATS_TPCCAL_STATS_CHANNEL_S)
+
+#define HTT_STATS_TPCCAL_STATS_CHAIN_M 0x00ff0000
+#define HTT_STATS_TPCCAL_STATS_CHAIN_S 16
+
+#define HTT_STATS_TPCCAL_STATS_CHAIN_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_STATS_CHAIN_M) >> \
+     HTT_STATS_TPCCAL_STATS_CHAIN_S)
+
+#define HTT_STATS_TPCCAL_STATS_GAININDEX_M 0xff000000
+#define HTT_STATS_TPCCAL_STATS_GAININDEX_S 24
+
+#define HTT_STATS_TPCCAL_STATS_GAININDEX_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_STATS_GAININDEX_M) >> \
+     HTT_STATS_TPCCAL_STATS_GAININDEX_S)
+
+#define HTT_STATS_TPCCAL_POSTPROC_CHANNEL_M 0x0000ffff
+#define HTT_STATS_TPCCAL_POSTPROC_CHANNEL_S 0
+
+#define HTT_STATS_TPCCAL_POSTPROC_CHANNEL_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_POSTPROC_CHANNEL_M) >> \
+     HTT_STATS_TPCCAL_POSTPROC_CHANNEL_S)
+
+#define HTT_STATS_TPCCAL_POSTPROC_CHAIN_M 0x00ff0000
+#define HTT_STATS_TPCCAL_POSTPROC_CHAIN_S 16
+
+#define HTT_STATS_TPCCAL_POSTPROC_CHAIN_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_POSTPROC_CHAIN_M) >> \
+     HTT_STATS_TPCCAL_POSTPROC_CHAIN_S)
+
+#define HTT_STATS_TPCCAL_POSTPROC_BAND_M 0xff000000
+#define HTT_STATS_TPCCAL_POSTPROC_BAND_S 24
+
+#define HTT_STATS_TPCCAL_POSTPROC_BAND_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_POSTPROC_BAND_M) >> \
+     HTT_STATS_TPCCAL_POSTPROC_BAND_S)
+
+#define HTT_STATS_TPCCAL_POSTPROC_NUMGAIN_M 0x000000ff
+#define HTT_STATS_TPCCAL_POSTPROC_NUMGAIN_S 0
+
+#define HTT_STATS_TPCCAL_POSTPROC_NUMGAIN_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_POSTPROC_NUMGAIN_M) >> \
+     HTT_STATS_TPCCAL_POSTPROC_NUMGAIN_S)
+
+#define HTT_STATS_TPCCAL_POSTPROC_CALDBSTATUS_M 0x0000ff00
+#define HTT_STATS_TPCCAL_POSTPROC_CALDBSTATUS_S 8
+
+#define HTT_STATS_TPCCAL_POSTPROC_CALDBSTATUS_GET(_var) \
+    (((_var) & HTT_STATS_TPCCAL_POSTPROC_CALDBSTATUS_M) >> \
+     HTT_STATS_TPCCAL_POSTPROC_CALDBSTATUS_S)
+
+/* STATS_TYPE : HTT_DBG_EXT_PDEV_STATS_FTM_TPCCAL
+ * TLV_TAGS:
+ *    - HTT_STATS_PDEV_FTM_TPCCAL_TAG
+ */
+#define HTT_MAX_TPCCAL_STATS 25
+#define HTT_STATS_TPC_CAL_MAX_NUM_POINTS 64
+
+typedef struct {
+    htt_tlv_hdr_t   tlv_hdr;
+
+    /* dword__tpccal_last_idx:
+     * Hold the last updated index for circular buffer of tpccal
+     * BIT [7 : 0]   :- tpcccal_last_idx
+     * BIT [31 : 8]  :- rsvd1
+     */
+    union {
+        A_UINT32 dword__tpccal_last_idx;
+        struct {
+            A_UINT32 tpccal_last_idx:8,
+                     rsvd1:24;
+        };
+    };
+
+    /*
+     * Below tpccal_stats struct will have latest values of tpccal data
+     * of array size HTT_MAX_TPCCAL_STATS.
+     * If there have been fewer than HTT_MAX_TPCCAL_STATS TPC calibrations,
+     * the unused elements will be filled with 0x0 values.
+     */
+    struct {
+       /*
+        * dword__measPwr:
+        * BIT [15 : 0]  :- measPwr
+        * BIT [31 : 16] :- rsvd2
+        */
+        union {
+            A_INT32 dword__measPwr;
+            struct {
+                A_INT32 measPwr:16, /* dBm units */
+                         rsvd2:16;
+            };
+        };
+
+       /*
+        * dword__channel_chain_gainIndex:
+        * hold channel chain and gain index values
+        * BIT [15 : 0]  :- channel
+        * BIT [23 : 16] :- chain
+        * BIT [24 : 31] :- gainIndex
+        */
+        union {
+            A_UINT32 dword__channel_chain_gainIndex;
+            struct {
+                A_UINT32 channel:16, /* MHz units */
+                         chain:8,
+                         gainIndex:8;
+            };
+        };
+
+       /*
+        * dword__pdadc:
+        * BIT [7 : 0]  :- pdadc
+        * BIT [31 : 8] :- rsvd3
+        */
+        union {
+            A_UINT32 dword__pdadc;
+            struct {
+                A_UINT32 pdadc:8,
+                         rsvd3:24;
+            };
+        };
+    } tpccal_stats[HTT_MAX_TPCCAL_STATS];
+
+    /*
+     * Below tpccal_stats_postproc struct will have required tpccal data
+     * for failures during postprocessing.
+     */
+    struct {
+       /*
+        * calStatus can be intrepreted with the below values:
+        *   TPCCAL_CALDATA                                 (1 << 0)
+        *   TPCCAL_CALINFO                                 (1 << 1)
+        *   TPCCAL_CALERROR                                (1 << 2)
+        *   bits 6:4 - reserved
+        *   TPCCAL_DONE_MASK                               (1 << 7)
+        *   bits 15:8 - reserved
+        *   TPCCALRSP_MISCFLAGS_CALERROR_GLUTS_NOT_FILLED  (1 << 16)
+        *   TPCCALRSP_MISCFLAGS_CALERROR_PLUT_NON_LINEAR   (1 << 17)
+        *   TPCCALRSP_MISCFLAGS_CALERROR_ATTEMPTS_EXCEEDED (1 << 18)
+        *   bits 31:19 - reserved
+        */
+        A_UINT32 calStatus;
+        /*
+         * The numgain field specifies how many of the
+         * HTT_STATS_TPC_CAL_MAX_NUM_POINTS elements in the below arrays
+         * contain valid data.
+         */
+        A_INT32  measPwr[HTT_STATS_TPC_CAL_MAX_NUM_POINTS]; /* dBm units */
+        A_UINT32 pdadc[HTT_STATS_TPC_CAL_MAX_NUM_POINTS];
+        A_UINT32 gainIndex[HTT_STATS_TPC_CAL_MAX_NUM_POINTS];
+
+        /*
+         * dword__channel_chain_band:
+         * channel, chain, and band values
+         * BIT [15 : 0]  :- channel
+         * BIT [23 : 16] :- chain
+         * BIT [31 : 24] :- band
+         */
+        union {
+            A_UINT32 dword__channel_chain_band;
+            struct {
+                A_UINT32 channel:16, /* MHz units */
+                         chain:8,
+                         band:8; /* 0: 2GHz, 1: 5GHz, 2: 6GHz */
+            };
+        };
+
+       /*
+        * dword__numgain_caldbStatus:
+        * numgain and caldbstatus
+        * BIT [7 : 0]  :- numgain
+        * BIT [15 : 8] :- caldbstatus
+        * BIT [31 : 16] :- rsvd4
+        *
+        * caldbStatus can be interpreted as below
+        *  CALDB_COMPLETED = 0
+        *  CALDB_SKIPPED = 1
+        *  CALDB_INPROGRESS = 2
+        */
+        union {
+            A_UINT32 dword__numgain_caldbStatus;
+            struct {
+                A_UINT32 numgain:8,
+                         caldbStatus:8,
+                         rsvd4:16;
+            };
+        };
+    } tpccal_stats_postproc;
+} htt_stats_pdev_ftm_tpccal_tlv;
 
 #define HTT_DLPAGER_STATS_MAX_HIST            10
 #define HTT_DLPAGER_ASYNC_LOCKED_PAGE_COUNT_M 0x000000FF
@@ -11306,8 +11675,37 @@ typedef struct {
      *  avg_chan_acc_lat_hist[6]: 1000 us <= channel access latency < 1500 us
      *  avg_chan_acc_lat_hist[7]: 1500 us <= channel access latency < 2000 us
      *  avg_chan_acc_lat_hist[8]: channel access latency is >= 2000 us
-    */
+     */
     A_UINT32 avg_chan_acc_lat_hist[HTT_MAX_NUM_CHAN_ACC_LAT_INTR];
+    /** Num of instances where OFDMA NBinWB is selected over MU-MIMO */
+    A_UINT32 dl_ofdma_nbinwb_selected_over_mu_mimo[HTT_NUM_AC_WMM];
+    /** Num of instances where OFDMA NBinWB is selected in standalone */
+    A_UINT32 dl_ofdma_nbinwb_selected_standalone[HTT_NUM_AC_WMM];
+    /**
+     * Number of instances where we populated TX mode and candidate lists
+     * only for DL.
+     */
+    A_UINT32 running_only_dl_scheduler_cnt[HTT_NUM_AC_WMM];
+    /**
+     * Number of instances where we populated TX mode and candidate lists
+     * only for UL.
+     */
+    A_UINT32 running_only_ul_scheduler_cnt[HTT_NUM_AC_WMM];
+    /**
+     * Number of instances where we populated TX mode and candidate lists
+     * additionally for DL after UL.
+     */
+    A_UINT32 running_additional_dl_scheduler_cnt[HTT_NUM_AC_WMM];
+    /**
+     * Number of instances where we populated TX mode and candidate lists
+     * additionally for UL after DL.
+     */
+    A_UINT32 running_additional_ul_scheduler_cnt[HTT_NUM_AC_WMM];
+    /**
+     * Number of instances where we populated TX mode and candidate lists
+     * only for UL BSR TX mode.
+     */
+    A_UINT32 running_ul_scheduler_for_bsrp_cnt[HTT_NUM_AC_WMM];
 } htt_stats_pdev_sched_algo_ofdma_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_pdev_sched_algo_ofdma_stats_tlv
