@@ -3885,10 +3885,18 @@ typedef struct {
      *     WMI_HAL_REG_CAPABILITIES_EXT2      hal_reg_caps[];
      *     wmi_nan_capabilities               nan_cap;
      *     WMI_SCAN_RADIO_CAPABILITIES_EXT2   wmi_scan_radio_caps[];
+     *     wmi_twt_caps_params                twt_caps[];
      *     wmi_htt_msdu_idx_to_htt_msdu_qtype htt_msdu_idx_to_qtype_map[];
      *     wmi_dbs_or_sbs_cap_ext             dbs_or_sbs_cap_ext;
+     *     wmi_cust_bdf_version_capabilities  cust_bdf_version_capabilities[];
+     *     wmi_sw_cal_ver_cap                 sw_cal_ver_cap[];
      *     A_INT32 hw_tx_power_signed[WMI_HW_TX_POWER_CAPS_MAX];
+     *     WMI_COEX_FIX_CHANNEL_CAPABILITIES  coex_fix_channel_caps[];
      *     wmi_aux_dev_capabilities           aux_dev_caps[];
+     *     wmi_enhanced_aoa_caps_param        aoa_caps_param[];
+     *     wmi_enhanced_aoa_per_band_caps_param
+     *         aoa_per_band_caps_param[];
+     *     wmi_sar_flag_tlv_param             sar_flags[];
      *     WMI_POWER_BOOST_CAPABILITIES       power_boost_capabilities[];
      *     WMI_RSSI_ACCURACY_IMPROVEMENT_CAPABILITIES
      *         rssi_accuracy_improvement_capabilities[];
@@ -4993,7 +5001,13 @@ typedef struct {
      *      flow_override set.
      *      Refer to the below definitions of WMI_RSRC_CFG_HOST_SERVICE_FLAG
      *      OPT_DP_ENABLE_BYPASS_FOR_HLOS_TID_OVERRIDE_GET and _SET macros.
-     *  Bits 31:20 - Reserved
+     *  Bit 20
+     *      This bit will set by host to inform FW that action OUI v2 is
+     *      enabled by both host configuration and FW capability.
+     *      Refer to the below definitions of
+     *      WMI_RSRC_CFG_HOST_SERVICE_FLAG_ACTION_OUI_V2_GET and SET.
+     *
+     *  Bits 31:21 - Reserved
      */
     A_UINT32 host_service_flags;
 
@@ -5542,6 +5556,11 @@ typedef struct {
         WMI_GET_BITS(host_service_flags, 19, 1)
 #define WMI_RSRC_CFG_HOST_SERVICE_FLAG_OPT_DP_ENABLE_BYPASS_FOR_HLOS_TID_OVERRIDE_SET(host_service_flags, val) \
         WMI_SET_BITS(host_service_flags, 19, 1, val)
+
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_ACTION_OUI_V2_GET(host_service_flags) \
+    WMI_GET_BITS(host_service_flags, 20, 1)
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_ACTION_OUI_V2_SET(host_service_flags, val) \
+    WMI_SET_BITS(host_service_flags, 20, 1, val)
 
 
 #define WMI_RSRC_CFG_CARRIER_CFG_CHARTER_ENABLE_GET(carrier_config) \
@@ -19695,6 +19714,13 @@ typedef enum {
          */
         WMI_VDEV_PARAM_SET_SAP_PS_WITH_TWT,            /* 0x8013 */
 
+        /*
+         * Support RTT Bandwidth downgrade
+         *      0 - Disable RTT Bandwidth downgrade
+         *      1 - Enable RTT Bandwidth downgrade
+         */
+        WMI_VDEV_PARAM_ENABLE_DISABLE_RTT_BW_DOWNGRADE,    /* 0x8014 */
+
     /*=== END VDEV_PARAM_PROTOTYPE SECTION ===*/
 } WMI_VDEV_PARAM;
 
@@ -22170,6 +22196,8 @@ typedef struct {
     A_UINT32 peer_eht_ops;
     wmi_ppe_threshold peer_eht_ppet;
     A_UINT32 assoc_flags;
+    /** maximum number of spatial streams supported by peer for tx */
+    A_UINT32 peer_max_tx_nss;
 
 /* Following this struct are the TLV's:
  *     A_UINT8 peer_legacy_rates[];
@@ -26551,6 +26579,11 @@ typedef enum
      */
     WMI_VENDOR_OUI_ACTION_AUTH_ASSOC_6MBPS_2GHZ = 17,
 
+    /*
+     * Disable dynamic SMPS if OUI matches
+     */
+    WMI_VENDOR_OUI_ACTION_DISABLE_DYNAMIC_SMPS = 18,
+
 
     /* Add any action before this line */
     WMI_VENDOR_OUI_ACTION_MAX_ACTION_ID
@@ -28028,8 +28061,8 @@ typedef struct
 #define LPI_IE_BITMAP_CHRE_RADIO_CHAIN       0x01000000     /* include radio chain and RSSI per chain information if this bit is set - for CHRE */
 #define LPI_IE_BITMAP_CHRE_SEC_MODE_MRSNO_WIFI6 0x02000000  /* include MRSNO IE's sec_mode information for WiFi6 if this bit is set - for CHRE */
 #define LPI_IE_BITMAP_CHRE_SEC_MODE_MRSNO_WIFI7 0x04000000  /* include MRSNO IE's sec_mode information for WiFi7 if this bit is set - for CHRE */
+#define LPI_IE_BITMAP_INTERWORKING_IE_VENUE_INFO 0x08000000 /* interworking IE venue info (2 bytes) will be filled when this bit is enabled */
 
-/* 0x08000000 is unused / available */
 
 #define LPI_IE_BITMAP_CHRE_ESS               0x10000000     /* ESS capability info for CHRE */
 #define LPI_IE_BITMAP_CHRE_SEC_MODE          0x20000000     /* Security capability info for CHRE */
@@ -34743,6 +34776,41 @@ typedef enum {
      *  A_INT8  ICNIRP 6 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-8) (Ch117~Ch149)
      *  A_INT8  ICNIRP 6 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-8) (Ch117~Ch149)
      *  A_INT8  ICNIRP 6 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-8) (Ch117~Ch149)
+     *  if version == 2 or chip is col, will have NONTAS POWER LIMIT
+     *  ====================NONTAS POWER LIMIT VALUE======================
+     *  A_INT8  NONTAS 2 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm)
+     *  A_INT8  NONTAS 2 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm)
+     *  A_INT8  NONTAS 2 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm)
+     *  A_INT8  NONTAS 5 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-1, Ch32 ~ Ch48)
+     *  A_INT8  NONTAS 5 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-1, Ch32 ~ Ch48)
+     *  A_INT8  NONTAS 5 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-1, Ch32 ~ Ch48)
+     *  A_INT8  NONTAS 5 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-2, Ch50 ~ Ch144)
+     *  A_INT8  NONTAS 5 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-2, Ch50 ~ Ch144)
+     *  A_INT8  NONTAS 5 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-2, Ch50 ~ Ch144)
+     *  A_INT8  NONTAS 5 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-3, Ch149 ~ Ch161)
+     *  A_INT8  NONTAS 5 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-3, Ch149 ~ Ch161)
+     *  A_INT8  NONTAS 5 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-3, Ch149 ~ Ch161)
+     *  A_INT8  NONTAS 5 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-4, Ch163 ~ Ch177)
+     *  A_INT8  NONTAS 5 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-4, Ch163 ~ Ch177)
+     *  A_INT8  NONTAS 5 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-4, Ch163 ~ Ch177)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-5) (Ch1, Ch2 ~ Ch41)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-5) (Ch1, Ch2 ~ Ch41)
+     *  A_INT8  NONTAS 6 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-5) (Ch1, Ch2 ~ Ch41)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-5) (Ch45 ~ Ch93)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-5) (Ch45 ~ Ch93)
+     *  A_INT8  NONTAS 6 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-5) (Ch45 ~ Ch93)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-6) (Ch97~ Ch113)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-6) (Ch97~ Ch113)
+     *  A_INT8  NONTAS 6 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-6) (Ch97~ Ch113)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-7) (Ch117~Ch149)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-7) (Ch117~Ch149)
+     *  A_INT8  NONTAS 6 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-7) (Ch117~Ch149)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-7) (Ch117~Ch149)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-7) (Ch117~Ch149)
+     *  A_INT8  NONTAS 6 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-7) (Ch117~Ch149)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain0) Power Limit Value(unit: 0.25dBm) (UNII-8) (Ch117~Ch149)
+     *  A_INT8  NONTAS 6 GHz SISO (Chain1) Power Limit Value(unit: 0.25dBm) (UNII-8) (Ch117~Ch149)
+     *  A_INT8  NONTAS 6 GHz MIMO (Chain0 + Chain1) Power Limit Value(unit: 0.25dBm) (UNII-8) (Ch117~Ch149)
      */
 
     BIOS_PARAM_TYPE_BANDEDGE_CTL_POWER,
@@ -34915,6 +34983,21 @@ typedef enum {
      *  ==============================================================
      */
 
+    BIOS_PARAM_TYPE_NON_SAR_COUNTRY_CONFIG,
+    /*
+     *  BIOS_PARAM_TYPE_NON_SAR_COUNTRY_CONFIG structure contains 256 bytes as below
+     *
+     *  A_UINT8 country_bitmap[NON_SAR_COUNTRY_BITMAP_COUNT];//NON_SAR_COUNTRY_BITMAP_COUNT = 256, 256BYTE.
+     *  0-255 stand for 256 country, each country has 8 bit for configuration.
+     *
+     *  ==================each bit configuration===========================
+     *  BIT0: Skip TAS limit config
+     *  BIT1: Skip SAR limit config
+     *  BIT2: Use domain GEO table. 1: Use Country GEO table
+     *  BIT3~5: index of domain/country used which group GEO offset table
+     *  BIT6~7: reserved
+     *  ====================================================================
+     */
 
     BIOS_PARAM_TYPE_MAX,
 } bios_param_type_e;
@@ -45138,13 +45221,42 @@ typedef struct {
 
 /****** End of 11BE EHT MAC Capabilities Information field ******/
 
-/****** 11BE EHT OPS Information field ******/
-
-/* Bit 0 is for MCS15. If bit0 is 1 then we enable mcs15 */
+/****** 11BE EHT OPS Information field - DEPRECATED ******/
+/* DEPRECATED, replaced by
+ * "Bit 6 is for MCS15. If bit6 is 1 then we disable mcs15"
+ * OLD: Bit 0 is for MCS15. If bit0 is 1 then we enable mcs15
+ */
 #define WMI_EHT_OPS_SUPMCS15_GET(eht_ops) WMI_GET_BITS(eht_ops, 0, 1)
 #define WMI_EHT_OPS_SUPMCS15_SET(eht_ops, value) WMI_SET_BITS(eht_ops, 0, 1, value)
+/****** End of 11BE EHT OPS Information field - DEPRECATED ******/
+/****** 11BE EHT Operation Parameters field ******/
+/* Bit 0 EHT Operation Information Present */
+#define WMI_EHT_OPS_INFORMATION_PRESENT_GET(eht_ops) WMI_GET_BITS(eht_ops, 0, 1)
+#define WMI_EHT_OPS_INFORMATION_PRESENT_SET(eht_ops, value) WMI_SET_BITS(eht_ops, 0, 1, value)
 
-/****** End of 11BE EHT OPS Information field ******/
+/* Bit 1 Disabled Subchannel Bitmap Present */
+#define WMI_EHT_OPS_DISABLED_SUBCHANNEL_BITMAP_GET(eht_ops) WMI_GET_BITS(eht_ops, 1, 1)
+#define WMI_EHT_OPS_DISABLED_SUBCHANNEL_BITMAP_SET(eht_ops, value) WMI_SET_BITS(eht_ops, 1, 1, value)
+
+/* Bit 2 EHT default PE duration */
+#define WMI_EHT_OPS_PE_DURATION_GET(eht_ops) WMI_GET_BITS(eht_ops, 2, 1)
+#define WMI_EHT_OPS_PE_DURATION_SET(eht_ops, value) WMI_SET_BITS(eht_ops, 2, 1, value)
+
+/* Bit 3 Group Addressed BU indication limit*/
+#define WMI_EHT_OPS_GROUP_ADDRESSED_BU_INDICATION_LIMIT_GET(eht_ops) WMI_GET_BITS(eht_ops, 3, 1)
+#define WMI_EHT_OPS_GROUP_ADDRESSED_BU_INDICATION_LIMIT_SET(eht_ops, value) WMI_SET_BITS(eht_ops, 3, 1, value)
+
+/* Bit 4~5 Group Addressed BU indication Exponent */
+#define WMI_EHT_OPS_GROUP_ADDRESSED_BU_INDICATION_EXPONENT_GET(eht_ops) WMI_GET_BITS(eht_ops, 4, 2)
+#define WMI_EHT_OPS_GROUP_ADDRESSED_BU_INDICATION_EXPONENT_SET(eht_ops) WMI_SET_BITS(eht_ops, 4, 2, value)
+
+/* Bit 6 is for MCS15. If bit6 is 1 then we disable mcs15 */
+#define WMI_EHT_OPS_MCS15_DISABLE_GET(eht_ops) WMI_GET_BITS(eht_ops, 6, 1)
+#define WMI_EHT_OPS_MCS15_DISABLE_SET(eht_ops, value) WMI_SET_BITS(eht_ops, 6, 1, value)
+
+/* Bit 7: reserved */
+/****** End of 11BE EHT Operation Parameters field ******/
+
 
 typedef struct {
     /** TLV tag and len; tag equals
