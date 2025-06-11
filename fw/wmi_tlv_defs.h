@@ -1449,6 +1449,43 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_mlo_peer_tid_to_link_map_event_fixed_param,
     WMITLV_TAG_STRUC_wmi_usd_service_cmd_fixed_param,
     WMITLV_TAG_STRUC_wmi_usd_service_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_vdev_create_wfdr2_mode_params,
+    WMITLV_TAG_STRUC_wmi_pdev_power_boost_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_pdev_power_boost_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_pdev_power_boost_mem_addr_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_c2c_detect_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_get_scan_cache_result_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_scan_cache_result_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_scan_cache_info,
+    WMITLV_TAG_STRUC_wmi_POWER_BOOST_CAPABILITIES,
+    WMITLV_TAG_STRUC_wmi_RSSI_ACCURACY_IMPROVEMENT_CAPABILITIES,
+    WMITLV_TAG_STRUC_wmi_mlo_link_reconfig_start_indication_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_mlo_link_reconfig_fixed_param,
+    WMITLV_TAG_STRUC_wmi_mlo_link_reconfig_complete_fixed_param,
+    WMITLV_TAG_STRUC_wmi_mlo_link_add_param,
+    WMITLV_TAG_STRUC_wmi_mlo_link_del_param,
+    WMITLV_TAG_STRUC_wmi_pdev_wifi_radar_cap_evt_fixed_param,
+    WMITLV_TAG_STRUC_wmi_wifi_radar_ltf_length_capabilities,
+    WMITLV_TAG_STRUC_wmi_wifi_radar_chain_capabilities,
+    WMITLV_TAG_STRUC_wmi_sawf_ezmesh_hop_count_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_ctrl_path_pdev_conn_stats_struct,
+    WMITLV_TAG_STRUC_wmi_pdev_sscan_spur_chan_impacted_bin_info,
+    WMITLV_TAG_STRUC_wmi_ctrl_path_ml_rcfg_stats_struct,
+    WMITLV_TAG_STRUC_wmi_vdev_vbss_config_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_vdev_vbss_peer_pn_info,
+    WMITLV_TAG_STRUC_wmi_vdev_vbss_peer_sn_info,
+    WMITLV_TAG_STRUC_wmi_vdev_vbss_config_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_stats_ext_event_vdev_ext2_t,
+    WMITLV_TAG_STRUC_wmi_ndp_set_latency_tput_fixed_param,
+    WMITLV_TAG_STRUC_wmi_roam_partner_link_param,
+    WMITLV_TAG_STRUC_wmi_mlo_link_ttlm_complete_fixed_param,
+    WMITLV_TAG_STRUC_wmi_ctrl_path_sta_dar_stats_struct,
+    WMITLV_TAG_STRUC_wmi_bpf_set_supported_offload_bitmap_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_hw_blacklist_chan_fixed_param,
+    WMITLV_TAG_STRUC_wmi_hw_blacklist_chan_data,
+    WMITLV_TAG_STRUC_wmi_pdev_suspend_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_bpf_set_apf_mode_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_peer_assoc_operating_mode_params,
 } WMITLV_TAG_ID;
 /*
  * IMPORTANT: Please add _ALL_ WMI Commands Here.
@@ -2826,7 +2863,8 @@ WMITLV_CREATE_PARAM_STRUC(WMI_VDEV_IPSEC_NATKEEPALIVE_FILTER_CMDID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_assoc_mlo_params, mlo_params, WMITLV_SIZE_VAR) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_eht_rate_set, peer_eht_rates, WMITLV_SIZE_VAR) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_assoc_mlo_partner_link_params, partner_link_params, WMITLV_SIZE_VAR) \
-    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_assoc_tid_to_link_map, peer_tid_to_link_map, WMITLV_SIZE_VAR)
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_assoc_tid_to_link_map, peer_tid_to_link_map, WMITLV_SIZE_VAR) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_assoc_operating_mode_params, operating_mode_params, WMITLV_SIZE_VAR)
 
 WMITLV_CREATE_PARAM_STRUC(WMI_PEER_ASSOC_CMDID);
 
