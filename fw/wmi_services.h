@@ -707,6 +707,18 @@ typedef  enum  {
     WMI_SERVICE_STA_MLO_RCFG_SUPPORT = 448, /* FW supports STA ML reconfig op */
     WMI_SERVICE_PDEV_SUSPEND_EVENT_SUPPORT = 449, /* FW supports PDEV_SUSPEND event */
     WMI_SERVICE_PCC_MODE = 450, /* Indicates FW support for PCC (P2P Connection Compatibility) Mode */
+    WMI_SERVICE_TDLS_NSS_CONFIRM_SUPPORT = 451, /* FW supports confirmation to host requested TDLS NSS operation */
+
+    WMI_SERVICE_EM_PCIE_CONFIG_CBW_SUPPORT = 452, /* Indicates support for channel bandwidth based PCIe config adjustment */
+    WMI_SERVICE_EM_PCIE_CONFIG_LPM_SUPPORT = 453, /* Indicates support for PCIe low power mode L0S/L1 */
+    WMI_SERVICE_EM_DCVS_SUPPORT = 454, /* Indicates support for Dynamic clock and voltage scaling */
+    WMI_SERVICE_EM_EDPS_SUPPORT = 455, /* Indicates support for Dynamic AP power save */
+    WMI_SERVICE_EM_PUO_SUPPORT = 456, /* Indicates support for TWT based periodic unavailability operation. */
+    WMI_SERVICE_EM_ECO_MODE_SUPPORT = 457, /* Indicates support for ECO mode config (LP BBF+ADC+SYNCT) */
+
+    WMI_SERVICE_11BN = 458, /* Indicates FW supports 802.11bn */
+    WMI_SERVICE_HOST_AWARE_POWERSAVE = 459, /* FW supports indicating the powerstate of FW to host */
+
 
     WMI_MAX_EXT2_SERVICE
 
