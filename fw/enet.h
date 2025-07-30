@@ -74,6 +74,7 @@ struct ethernet_vlan_hdr_t {
     A_UINT8 ethertype[2];
 };
 
+#if 0
 typedef PREPACK struct _wai_hdr {
     A_UINT8 version[2];
     A_UINT8 type;
@@ -90,6 +91,7 @@ typedef PREPACK struct {
     A_UINT16 vlan_tci;
     A_UINT16 vlan_encap_p;
 } POSTPACK vlan_hdr_t;
+#endif
 
 #define ETHERTYPE_IS_EAPOL_WAPI(typeorlen)           \
 			((typeorlen) == ETHERTYPE_PAE ||  \
