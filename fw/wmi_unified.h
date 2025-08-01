@@ -10133,6 +10133,7 @@ typedef enum {
     WMI_PKTLOG_EVENT_CBF = 0x00000100, /* To support CBF's filter in */
     /* To support hybrid of events from FW and tx monitor status ring */
     WMI_PKTLOG_EVENT_HYBRID_TX = 0x00000200,
+    WMI_PKTLOG_EVENT_CUSTOM = 0x00000400,
 } WMI_PKTLOG_EVENT;
 
 typedef enum {
