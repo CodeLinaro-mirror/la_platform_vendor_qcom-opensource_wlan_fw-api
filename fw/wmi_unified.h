@@ -9338,6 +9338,16 @@ typedef enum {
 
     /** Parameter to enable/disable tid0 and tid3 mapping to work 3 Link MLO */
     WMI_PDEV_PARAM_TID_MAPPING_3LINK_MLO,
+
+    /** SCAN MODE:
+     *  bit   | scan_mode
+     * -----------------
+     *  0     | SISO SCAN - 1x1 scan
+     *        |     If this bit is 0, then use default scan (NxN).
+     *  1-31  | Reserved.
+     */
+    WMI_PDEV_PARAM_SCAN_MODE,
+
 } WMI_PDEV_PARAM;
 
 #define WMI_PDEV_ONLY_BSR_TRIG_IS_ENABLED(trig_type) WMI_GET_BITS(trig_type, 0, 1)
