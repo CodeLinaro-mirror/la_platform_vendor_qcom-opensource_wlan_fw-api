@@ -600,6 +600,11 @@ typedef enum {
      * WMI cmd to to Enable/Disable NPCA and its capabilities
      */
     WMI_PDEV_NPCA_AP_CAP_CMDID,
+    /**
+     * WMI cmd to get the per-vdev, per-access-category queue pending packets
+     * for the pdev
+     */
+    WMI_PDEV_MULTI_VDEV_GET_AC_QUEUE_DEPTH_CMDID,
 
     /* VDEV (virtual device) specific commands */
     /** vdev create */
@@ -1939,6 +1944,9 @@ typedef enum {
      * WMI_PDEV_NPCA_AP_CAP_CMDID response event
      */
     WMI_PDEV_NPCA_AP_CAP_RESP_EVENTID,
+
+    /* Event to share the per-access-category queue pending packets */
+    WMI_PDEV_MULTI_VDEV_AC_QUEUE_DEPTH_EVENTID,
 
 
     /* VDEV specific events */
@@ -19704,6 +19712,13 @@ typedef enum {
      * value 1 | disable responder for this vdev
      */
     WMI_VDEV_PARAM_TWT_RESP_DISABLE,                      /* 0xC9 */
+
+    /*
+     * Enable or disable 2xLDPC in Fixed rate UHR data packet transmissions.
+     * valid values: 0 - Disable 2xLDPC, 1 - Enable 2xLDPC.
+     */
+    WMI_VDEV_PARAM_2xLDPC,                                /* 0xCA */
+
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
      * The below vdev param types are used for prototyping, and are
@@ -45940,7 +45955,7 @@ typedef struct {
 
 /* Bit 4~5 Group Addressed BU indication Exponent */
 #define WMI_EHT_OPS_GROUP_ADDRESSED_BU_INDICATION_EXPONENT_GET(eht_ops) WMI_GET_BITS(eht_ops, 4, 2)
-#define WMI_EHT_OPS_GROUP_ADDRESSED_BU_INDICATION_EXPONENT_SET(eht_ops) WMI_SET_BITS(eht_ops, 4, 2, value)
+#define WMI_EHT_OPS_GROUP_ADDRESSED_BU_INDICATION_EXPONENT_SET(eht_ops, value) WMI_SET_BITS(eht_ops, 4, 2, value)
 
 /* Bit 6 is for MCS15. If bit6 is 1 then we disable mcs15 */
 #define WMI_EHT_OPS_MCS15_DISABLE_GET(eht_ops) WMI_GET_BITS(eht_ops, 6, 1)
@@ -51586,6 +51601,30 @@ typedef struct {
     /** PDEV identifier */
     A_UINT32 pdev_id;
 } wmi_energy_mgmt_eco_mode_config_cmd_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_pdev_multi_vdev_get_ac_queue_depth_cmd_fixed_param */
+    A_UINT32 pdev_id; /** pdev ID set by the command */
+} wmi_pdev_multi_vdev_get_ac_queue_depth_cmd_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header;  /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_ac_info */
+    A_UINT32 vdev_id;
+    /** pending_packets_per_ac:
+     *  number of MSDUs pending in MSDU and MPDU queues for the Access Category
+     *  for the specific vdev
+     */
+    A_UINT32 pending_packets_per_ac[WLAN_MAX_AC];
+} wmi_vdev_ac_info;
+
+typedef struct {
+    A_UINT32 tlv_header;     /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_pdev_multi_vdev_ac_queue_depth_event_fixed_param */
+    A_UINT32 pdev_id;        /* pdev ID set by the command */
+    /* The TLVs for the 4 AC follows with the vdev_id :
+     *     wmi_vdev_ac_info vdev_ac_info[];   wmi_vdev_ac_info for BE/BK/VI/VO
+     */
+} wmi_pdev_multi_vdev_ac_queue_depth_event_fixed_param;
+
 
 
 
