@@ -870,6 +870,12 @@ typedef enum {
     HTT_STATS_TX_PDEV_BN_DL_MU_OFDMA_STATS_TAG      = 223, /* htt_stats_tx_pdev_bn_dl_mu_ofdma_tlv, TOPIC=advanced */
     HTT_STATS_TX_PDEV_BN_UL_MU_OFDMA_STATS_TAG      = 224, /* htt_stats_tx_pdev_bn_ul_mu_ofdma_tlv, TOPIC=advanced */
     HTT_STATS_RX_PEER_TID_REO_QUEUE_BA_TAG          = 225, /* htt_stats_rx_peer_tid_reo_queue_ba_tlv */
+    HTT_STATS_TXBF_OFDMA_BN_NDPA_TAG                = 226, /* htt_stats_txbf_ofdma_bn_ndpa_tlv */
+    HTT_STATS_TXBF_OFDMA_BN_NDP_TAG                 = 227, /* htt_stats_txbf_ofdma_bn_ndp_tlv */
+    HTT_STATS_TXBF_OFDMA_BN_BRP_TAG                 = 228, /* htt_stats_txbf_ofdma_bn_brp_tlv */
+    HTT_STATS_TXBF_OFDMA_BN_STEER_TAG               = 229, /* htt_stats_txbf_ofdma_bn_steer_tlv */
+    HTT_STATS_TXBF_OFDMA_BN_STEER_MPDU_TAG          = 230, /* htt_stats_txbf_ofdma_bn_steer_mpdu_tlv */
+    HTT_STATS_TXBF_OFDMA_BN_PARBW_TAG               = 231, /* htt_stats_txbf_ofdma_bn_parbw_tlv */
 
     HTT_STATS_MAX_TAG,
 } htt_stats_tlv_tag_t;
@@ -5515,6 +5521,9 @@ enum htt_srng_ring_id {
     HTT_LPASS_TO_FW_RXBUF_RING,    /* new LPASS to FW refill ring to recycle rx buffers */
     HTT_HOST3_TO_FW_RXBUF_RING,    /* used by host for EasyMesh feature */
     HTT_HOST4_TO_FW_RXBUF_RING,    /* fourth ring used by host to provide buffers for MGMT packets */
+    HTT_RXDMA_WBM_BUF0_RING,       /* used for SFE Datapath */
+    HTT_RXDMA_WBM_BUF1_RING,       /* used for PPE Datapath */
+    HTT_RXDMA_WBM_BUF2_RING,       /* used for MGMT path */
     /* Add Other SRING which can't be directly configured by host software above this line */
 };
 
@@ -6176,6 +6185,17 @@ PREPACK struct htt_rx_ring_selection_cfg_t {
     A_UINT32 packet_type_enable_data_flags_3;
     A_UINT32 packet_type_enable_data_fpmo_flags0;
     A_UINT32 packet_type_enable_data_fpmo_flags1;
+
+    /* rdi_based_source_cfg:
+     * Each bit position in rdi_based_source_cfg represents RDI
+     * (REO Destination Indication).
+     *
+     * 1 in specific RDI position represents, for the given RDI position,
+     * ring id in the ring setup msg has to be configured as source buf.
+     *
+     * Below Field only applies for HTT_RXDMA_WBM_BUF0/1/2_RING
+     */
+    A_UINT32 rdi_based_source_cfg;
 } POSTPACK;
 
 #define HTT_RX_RING_SELECTION_CFG_SZ    (sizeof(struct htt_rx_ring_selection_cfg_t))
