@@ -385,6 +385,9 @@ typedef enum {
     /** initialize the wlan sub system */
     WMI_INIT_CMDID = 0x1,
 
+    /** WMI command to specify the driver's mode of operation */
+    WMI_WLAN_MODE_REQ_CMDID,
+
     /* Scan specific commands */
 
     /** start scan request to FW  */
@@ -607,6 +610,8 @@ typedef enum {
      * for the pdev
      */
     WMI_PDEV_MULTI_VDEV_GET_AC_QUEUE_DEPTH_CMDID,
+    /* Event to indicate the status of the set tx chainmask command */
+    WMI_PDEV_SET_TX_CHAINMASK_COMP_EVENTID,
 
     /* VDEV (virtual device) specific commands */
     /** vdev create */
@@ -738,6 +743,9 @@ typedef enum {
 
     /** data traffic monitoring */
     WMI_VDEV_TRAFFIC_MONITORING_CMDID,
+
+    /** WMI cmd used to control DPS Assisting AP role config */
+    WMI_VDEV_ENERGY_MGMT_DPS_ASSISTING_ROLE_CONFIG_CMDID,
 
     /* peer specific commands */
 
@@ -1767,8 +1775,6 @@ typedef enum {
     WMI_ENERGY_MGMT_PUO_CONFIG_CMDID,
     /** WMI cmd used to control ECO mode config */
     WMI_ENERGY_MGMT_ECO_MODE_CONFIG_CMDID,
-    /** WMI cmd used to control DPS Assisting AP role config */
-    WMI_ENERGY_MGMT_DPS_ASSISTING_ROLE_CONFIG_CMDID,
 } WMI_CMD_ID;
 
 typedef enum {
@@ -1786,6 +1792,23 @@ typedef enum {
      * the target supports
      */
     WMI_IFACE_COMBINATION_IND_EVENTID,
+
+    /** WMI evt that indicates FW basic initializations are done, and FW
+     *  is ready to receive the WLAN mode specification from the host.
+     *
+     * mode selection handshake:
+     *     host <-- WMI_FW_READY_IND_EVENTID <---- target
+     *     host --> WMI_WLAN_MODE_REQ_CMDID -----> target
+     *     host <-- WMI_WLAN_MODE_RESP_EVENTID <-- target
+     * precedes the WLAN initialization handshake:
+     *     host <-- WMI_SERVICE_READY_EVENTID <--- target
+     *     host --> WMI_INIT_CMDID --------------> target
+     *     host <-- WMI_READY_EVENTID <----------- target
+     */
+    WMI_FW_READY_IND_EVENTID,
+    /* WMI evt to acknowledge the driver mode specified by host */
+    WMI_WLAN_MODE_RESP_EVENTID,
+
 
     /** Scan specific events */
     WMI_SCAN_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_SCAN),
@@ -5083,8 +5106,16 @@ typedef struct {
      *      country supports SP regulatory rules.
      *      Refer to the below defintions of WMI_RSRC_CFG_HOST_SERVICE_FLAG
      *      AFC_TRIGGER_ON_DEFAULT_CC_EVENT_GET and _SET macros.
+     *  Bit 23
+     *      This bit will set by host to inform FW that direct refill to
+     *      SW2RxDMA ring is supported by the host and the ring which is
+     *      directly refilled by HOST will be indicated in the
+     *      HTT_H2T_MSG_TYPE_SRING_SETUP and FW should refill the Rx buffers
+     *      to the secondary refill ring.
+     *      Refer to the below definitions of WMI_RSRC_CFG_HOST_SERVICE_FLAG
+     *      DIRECT_REFILL_SUPPORT_GET and _SET macros.
      *
-     *  Bits 31:23 - Reserved
+     *  Bits 31:24 - Reserved
      */
     A_UINT32 host_service_flags;
 
@@ -5662,6 +5693,12 @@ typedef struct {
         WMI_GET_BITS(host_service_flags, 22, 1)
 #define WMI_RSRC_CFG_HOST_SERVICE_FLAG_AFC_TRIGGER_ON_DEFAULT_CC_EVENT_SET(host_service_flags, val) \
         WMI_SET_BITS(host_service_flags, 22, 1, val)
+
+/* This bit is used to inform FW that HOST supports direct Rx buffers refill to the SW2RxDMA ring*/
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_DIRECT_REFILL_SUPPORT_GET(host_service_flags) \
+         WMI_GET_BITS(host_service_flags, 23, 1)
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_DIRECT_REFILL_SUPPORT_SET(host_service_flags, val) \
+         WMI_SET_BITS(host_service_flags, 23, 1, val)
 
 
 #define WMI_RSRC_CFG_CARRIER_CFG_CHARTER_ENABLE_GET(carrier_config) \
@@ -17429,6 +17466,10 @@ typedef struct {
      * vdev_stats_id_valid field is non-zero.
      */
     A_UINT32 vdev_stats_id;
+    /** cfp_enable: indicate whether control frame protection is enabled */
+    A_UINT32 cfp_enable;
+
+
 /* This TLV is followed by another TLV of array of structures
  *   wmi_vdev_txrx_streams cfg_txrx_streams[];
  *   wmi_vdev_create_mlo_params mlo_params[0,1];
@@ -19800,6 +19841,29 @@ typedef enum {
      */
     WMI_VDEV_PARAM_2xLDPC,                                /* 0xCA */
 
+    /**
+     * Self-capability support indication for CCK RX/TX in 5GHz band.
+     * Use with WMI_VDEV_SET_PARAM_CMDID, value:
+     *    BIT 0 - cck_rx_support_5ghz
+     *    BIT 1 - cck_tx_support_5ghz
+     *
+     * Host must only set this param when enabled by ini and
+     * WMI_SERVICE_CCK_RX_SUPPORT_5GHZ/WMI_SERVICE_CCK_TX_SUPPORT_5GHZ
+     * (FW capability bits) are present.
+     */
+    WMI_VDEV_PARAM_CCK_SUPPORT,                           /* 0xCB */
+
+    /*
+     * BIT 0:
+     *     value 0 | disable D-SMPS
+     *     value 1 | enable D-SMPS
+     * BIT 1:
+     *     value 0 | disable dynamic D-SMPS base on RSSI feature
+     *     value 1 | enable dynamic D-SMPS base on RSSI feature
+     */
+    WMI_VDEV_PARAM_DSMPS_CONTROL,                         /* 0xCC */
+
+
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
      * The below vdev param types are used for prototyping, and are
@@ -19971,7 +20035,10 @@ typedef enum {
          *      0 - Disable RTT Bandwidth downgrade
          *      1 - Enable RTT Bandwidth downgrade
          */
-        WMI_VDEV_PARAM_ENABLE_DISABLE_RTT_BW_DOWNGRADE,    /* 0x8014 */
+        WMI_VDEV_PARAM_ENABLE_DISABLE_RTT_BW_DOWNGRADE,/* 0x8014 */
+
+        /* customized txop for vendor configuration in unit of us */
+        WMI_VDEV_PARAM_SU_TXOP_BURST_LIMIT_US,         /* 0x8015 */
 
     /*=== END VDEV_PARAM_PROTOTYPE SECTION ===*/
 } WMI_VDEV_PARAM;
@@ -21431,6 +21498,9 @@ typedef struct {
 #define WMI_PEER_CREATE_GET_HW_PEER_ID_VALID(flags) WMI_GET_BITS(flags,0,1)
 #define WMI_PEER_CREATE_SET_HW_PEER_ID_VALID(flags) WMI_SET_BITS(flags,0,1,value)
 
+#define WMI_PEER_CREATE_GET_IS_11BI_PEER(flags) WMI_GET_BITS(flags,1,1)
+#define WMI_PEER_CREATE_SET_IS_11BI_PEER(flags) WMI_SET_BITS(flags,1,1,value)
+
 typedef struct {
     A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_peer_create_cmd_fixed_param */
     /** unique id identifying the VDEV, generated by the caller */
@@ -21443,7 +21513,8 @@ typedef struct {
     union {
         struct {
             A_UINT32 hw_peer_id_valid :1,
-                     reserved         :31;
+                     is_llbi_peer:     1,
+                     reserved         :30;
         };
         A_UINT32 flags;
     };
@@ -21941,6 +22012,8 @@ typedef struct {
  */
 #define WMI_PEER_PARAM_UNSOL_PROBE_RESP_INTVL          0x2C
 
+#define WMI_PEER_PARAM_SET_MESH_NODE                   0x2D
+#define WMI_PEER_PARAM_SET_QUALCOMM_NODE               0x2E
 
 typedef struct {
     A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_peer_set_param_cmd_fixed_param */
@@ -22404,7 +22477,7 @@ typedef struct {
     WMI_SET_BITS(mpduq_msduq_number,22,5,value)
 
 typedef struct {
-    A_UINT32 tlv_header; /* TAG_ID : WMITLV_TAG_STRUC_wmi_peer_assoc_hol_mdsuq_params */
+    A_UINT32 tlv_header; /* TAG_ID : WMITLV_TAG_STRUC_wmi_peer_assoc_hol_msduq_params */
 
     /**
      * A_UINT32
@@ -22444,7 +22517,37 @@ typedef struct {
 
     /* Upper 8 bits of 40 bit pn physical address */
     A_UINT32 pn_paddr_39_32;
-} wmi_peer_assoc_hol_mdsuq_params;
+} wmi_peer_assoc_hol_msduq_params;
+/*
+ * for backwards compatibility, maintain old version of the name
+ * (with "mdsu" typo)
+ */
+typedef wmi_peer_assoc_hol_msduq_params wmi_peer_assoc_hol_mdsuq_params;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TAG_ID : WMITLV_TAG_STRUC_wmi_peer_assoc_cfp_params */
+
+    /* control frame protection enable/disable per peer */
+    A_UINT32 enable_cfp;
+
+    /*
+     * MIC Padding Delay Field Values:
+     *
+     * Value    Delay
+     * ----------------
+     * 0        0 us
+     * 1        4 us
+     * 2        8 us
+     * 3        12 us
+     * 4        16 us
+     * 5        20 us
+     * 6        24 us
+     * 7        28 us
+     * 8        32 us
+     * 9-15     Reserved
+     */
+    A_UINT32 cfp_padding_delay;
+} wmi_peer_assoc_cfp_params; /* cfp -> control frame protection */
 
 /*
  * PEER assoc_flags for assoc complete:
@@ -22607,9 +22710,19 @@ typedef struct {
     /** Peer create flags */
     union {
         struct {
-            A_UINT32 hw_peer_id_valid : 1,
-                     peer_type_valid  : 1,
-                     reserved         :30;
+            A_UINT32 hw_peer_id_valid         : 1,
+                     peer_type_valid          : 1,
+                     /**
+                      * Host sets these peer_cck [rx,tx] support_5ghz fields
+                      * based on the intersection of AP and self-capabilities.
+                      * Example:
+                      *     On the STA, if the peer (AP) supports CCK 5GHz RX
+                      *     and the STA supports CCK 5GHz TX, then set
+                      *     peer_cck_rx_support_5ghz = 1
+                      */
+                     peer_cck_rx_support_5ghz : 1,
+                     peer_cck_tx_support_5ghz : 1,
+                     reserved                 :28;
         };
         A_UINT32 flags;
     };
@@ -22646,10 +22759,16 @@ typedef struct {
 } wmi_peer_assoc_complete_cmd_fixed_param;
 
 #define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_HW_PEER_ID_VALID_GET(flags) WMI_GET_BITS(flags, 0, 1)
-#define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_HW_PEER_ID_VALID_SET(flags, value) WMI_GET_BITS(flags, 0, 1, value)
+#define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_HW_PEER_ID_VALID_SET(flags, value) WMI_SET_BITS(flags, 0, 1, value)
 
 #define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_PEER_TYPE_VALID_GET(flags) WMI_GET_BITS(flags, 1, 1)
-#define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_PEER_TYPE_VALID_SET(flags, value) WMI_GET_BITS(flags, 1, 1, value)
+#define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_PEER_TYPE_VALID_SET(flags, value) WMI_SET_BITS(flags, 1, 1, value)
+
+#define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_PEER_CCK_RX_SUPPORT_5GHZ_GET(flags) WMI_GET_BITS(flags, 2, 1)
+#define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_PEER_CCK_RX_SUPPORT_5GHZ_SET(flags, value) WMI_SET_BITS(flags, 2, 1, value)
+
+#define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_PEER_CCK_TX_SUPPORT_5GHZ_GET(flags) WMI_GET_BITS(flags, 3, 1)
+#define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_PEER_CCK_TX_SUPPORT_5GHZ_SET(flags, value) WMI_SET_BITS(flags, 3, 1, value)
 
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_peer_npca_cap_params*/
@@ -23467,6 +23586,7 @@ enum {
     WMI_AUTH_WPA3_SAE_SHA384,
     WMI_AUTH_FT_RSNA_SAE_SHA384,
     WMI_AUTH_FT_RSNA_PSK_SHA384,
+    WMI_AUTH_EPPKE, /* For 11BI */
 };
 
 typedef enum {
@@ -23850,6 +23970,8 @@ typedef struct {
      * considered for the candidates for which MCC will be formed.
      */
     A_UINT32 mcc_score_factor_pcnt;
+    /* Scoring weightage for privacy support like 11bi */
+    A_UINT32 privacy_weightage_pcnt;
 } wmi_roam_cnd_scoring_param;
 
 typedef struct {
@@ -23921,6 +24043,16 @@ typedef struct {
      * of the currently associated AP.
      */
     A_UINT32 bg_rssi_threshold;
+    /**
+     * IEEE value for auth algorithm
+     * Authentication algorithm number = 3:
+     *     Simultaneous Authentication of Equals (SAE)
+     * Authentication algorithm number = 8:
+     *     IEEE 802.1X authentication
+     * Authentication algorithm number = 9:
+     *     EPPKE authentication
+     */
+    A_UINT32 auth_algo;
 } wmi_ap_profile;
 
 typedef struct {
@@ -28457,6 +28589,8 @@ typedef enum {
     WMI_STA_SMPS_PARAM_DTIM_1CHRX_ENABLE = 5,
     /** Enable/Disable dynamic bw feature */
     WMI_STA_SMPS_PARAM_DYNAMIC_BW_SWITCH = 6,
+    /** Enable/Disable dynamic mode sw feature */
+    WMI_STA_SMPS_PARAM_DYNAMIC_MODE_SWITCH = 7,
 } wmi_sta_smps_param;
 
 typedef struct {
@@ -30980,6 +31114,16 @@ typedef struct {
     A_UINT32 mac_tsf_id;
     /** ignore mac_tsf_id unless mac_tsf_id_valid is set */
     A_UINT32 mac_tsf_id_valid;
+    /**
+     * IEEE value for auth algorithm
+     * Authentication algorithm number = 3:
+     *     Simultaneous Authentication of Equals (SAE)
+     * Authentication algorithm number = 8:
+     *     IEEE 802.1X authentication
+     * Authentication algorithm number = 9:
+     *     EPPKE authentication
+     */
+    A_UINT32 auth_algo;
     /**
      * TLV (tag length value) parameters follows roam_synch_event
      * The TLV's are:
@@ -38596,8 +38740,8 @@ typedef struct {
      (WMI_GET_BITS(uhr_cap_mac[1], 0, 2) << 3))
 #define WMI_UHRCAP_MAC_UPDATE_IND_TIM_SET(uhr_cap_mac, value) \
     do { \
-        WMI_SET_BITS(uhr_cap_mac[0], 29, 3, value & 0x7) \
-        WMI_SET_BITS(uhr_cap_mac[1], 0, 2, ((value & 0x18) >> 3)) \
+        WMI_SET_BITS(uhr_cap_mac[0], 29, 3, value & 0x7); \
+        WMI_SET_BITS(uhr_cap_mac[1], 0, 2, ((value & 0x18) >> 3)); \
     } while (0)
 
 /* Bit 34: Bounded ESS */
@@ -38655,32 +38799,32 @@ typedef struct {
 #define WMI_CAP_EXT2_NPCA_ENABLED_GET(npca_capability) \
     WMI_GET_BITS(npca_capability, 0, 1)
 #define WMI_CAP_EXT2_NPCA_ENABLED_SET(npca_capability, value) \
-    WMI_sET_BITS(npca_capability, 0, 1, value)
+    WMI_SET_BITS(npca_capability, 0, 1, value)
 
 #define WMI_CAP_EXT2_NPCA_MIN_DUR_THRESHOLD_GET(npca_capability) \
     WMI_GET_BITS(npca_capability, 1, 4)
 #define WMI_CAP_EXT2_NPCA_MIN_DUR_THRESHOLD_SET(npca_capability, value) \
-    WMI_sET_BITS(npca_capability, 1, 5, value)
+    WMI_SET_BITS(npca_capability, 1, 5, value)
 
 #define WMI_CAP_EXT2_NPCA_SWITCH_DELAY_GET(npca_capability) \
     WMI_GET_BITS(npca_capability, 5, 6)
 #define WMI_CAP_EXT2_NPCA_SWITCH_DELAY_SET(npca_capability, value) \
-    WMI_sET_BITS(npca_capability, 5, 6, value)
+    WMI_SET_BITS(npca_capability, 5, 6, value)
 
 #define WMI_CAP_EXT2_NPCA_SWITCH_BACK_DELAY_GET(npca_capability) \
     WMI_GET_BITS(npca_capability, 11, 6)
 #define WMI_CAP_EXT2_NPCA_SWITCH_BACK_DELAY_SET(npca_capability, value) \
-    WMI_sET_BITS(npca_capability, 11, 6, value)
+    WMI_SET_BITS(npca_capability, 11, 6, value)
 
 #define WMI_CAP_EXT2_NPCA_QSRC_GET(npca_capability) \
     WMI_GET_BITS(npca_capability, 17, 2)
 #define WMI_CAP_EXT2_NPCA_QSRC_SET(npca_capability, value) \
-    WMI_sET_BITS(npca_capability, 17, 2, value)
+    WMI_SET_BITS(npca_capability, 17, 2, value)
 
 #define WMI_CAP_EXT2_NPCA_MOPLEN_GET(npca_capability) \
     WMI_GET_BITS(npca_capability, 19, 1)
 #define WMI_CAP_EXT2_NPCA_MOPLEN_SET(npca_capability, value) \
-    WMI_sET_BITS(npca_capability, 19, 1, value)
+    WMI_SET_BITS(npca_capability, 19, 1, value)
 
 
 typedef struct {
@@ -40126,7 +40270,8 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_PEER_TID_RATE_CUSTOM_CMDID);
         WMI_RETURN_STRING(WMI_VDEV_GET_TPC_IE_POWER_CMDID);
         WMI_RETURN_STRING(WMI_VDEV_TRAFFIC_MONITORING_CMDID);
-        WMI_RETURN_STRING(WMI_ENERGY_MGMT_DPS_ASSISTING_ROLE_CONFIG_CMDID);
+        WMI_RETURN_STRING(WMI_VDEV_ENERGY_MGMT_DPS_ASSISTING_ROLE_CONFIG_CMDID);
+        WMI_RETURN_STRING(WMI_WLAN_MODE_REQ_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
@@ -43073,6 +43218,24 @@ typedef struct {
     wmi_mac_addr transmit_addr;
     /* AKM suite type (as defined in the IEEE 802.11 spec) */
     A_UINT32 akm_suite_type;
+    /**
+     * IEEE value for auth algorithm
+     * Authentication algorithm number = 3:
+     *     Simultaneous Authentication of Equals (SAE)
+     * Authentication algorithm number = 8:
+     *     IEEE 802.1X authentication
+     * Authentication algorithm number = 9:
+     *     EPPKE authentication
+     */
+    A_UINT32 auth_algo;
+
+    /* IEEE value for below ciphers */
+    /** unicast cipher set */
+    A_UINT32 pairwise_cipher;
+    /** mcast/group cipher set */
+    A_UINT32 group_cipher;
+    /** mcast/group management frames cipher set */
+    A_UINT32 group_mgmt_cipher;
 } wmi_roam_preauth_start_event_fixed_param;
 
 typedef struct {
@@ -52189,6 +52352,22 @@ typedef struct {
      */
 } wmi_pdev_multi_vdev_ac_queue_depth_event_fixed_param;
 
+typedef enum {
+    WMI_PDEV_SET_TX_CHAINMASK_SUCCESS = 0,
+    WMI_PDEV_SET_TX_CHAINMASK_FAIL_INVALID_CHAINMASK,
+} WMI_PDEV_SET_TX_CHAINMASK_COMP_STATUS_TYPE;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_pdev_set_tx_chainmask_comp_event_fixed_param */
+    /** pdev_id for identifying the MAC
+     */
+    A_UINT32 pdev_id;
+    /*
+     * status type WMI_PDEV_SET_TX_CHAINMASK_COMP_STATUS_TYPE
+     */
+    A_UINT32 status;
+} wmi_pdev_set_tx_chainmask_comp_event_fixed_param;
+
 typedef struct {
     /** TLV tag and len; tag equals
      * WMITLV_TAG_STRUC_wmi_vdev_traffic_monitoring_cmd_fixed_param */
@@ -52208,11 +52387,75 @@ typedef enum {
 
 typedef struct {
     /** TLV tag and len; tag equals
-    * WMITLV_TAG_STRUC_wmi_energy_mgmt_dps_assisting_role_config_cmd_fixed_param */
+    * WMITLV_TAG_STRUC_wmi_vdev_energy_mgmt_dps_assisting_role_config_cmd_fixed_param */
     A_UINT32 tlv_header;
+    /* VDEV identifier */
+    A_UINT32 vdev_id;
     /** holds a wmi_dps_assisting_role_e value */
     A_UINT32 config;
-} wmi_energy_mgmt_dps_assisting_role_config_cmd_fixed_param;
+} wmi_vdev_energy_mgmt_dps_assisting_role_config_cmd_fixed_param;
+
+
+/* WMI evt to indicate FW is ready */
+typedef struct {
+    /** TLV tag and len; tag equals
+     * WMITLV_TAG_STRUC_wmi_fw_ready_ind_event_fixed_param */
+    A_UINT32 tlv_header;
+} wmi_fw_ready_ind_event_fixed_param;
+
+typedef enum {
+    WMI_DRIVER_MODE_MISSION,
+    WMI_DRIVER_MODE_FTM,
+    WMI_DRIVER_MODE_OFF,
+} WMI_DRIVER_MODE;
+
+/** WMI command to indicate the driver mode of operation */
+typedef struct {
+    /** TLV tag and len; tag equals
+     * WMITLV_TAG_STRUC_wmi_wlan_mode_req_cmd_fixed_param */
+    A_UINT32 tlv_header;
+    /* This indicates driver mode of operation from host */
+    A_UINT32 mode; /* refer to WMI_DRIVER_MODE enum */
+} wmi_wlan_mode_req_cmd_fixed_param;
+
+typedef enum {
+    WMI_DRIVER_MODE_RESP_SUCCESS,
+    WMI_DRIVER_MODE_RESP_FAILURE,
+} WMI_WLAN_DRIVER_MODE_RESP_STATUS;
+
+typedef enum {
+    WMI_DRIVER_FAIL_REASON_UNKNOWN_MODE,
+    /* In FTM mode, initiate PHY error */
+    WMI_DRIVER_FAIL_REASON_FTM_PHY_INIT_ERR,
+    /* For both MISSION and FTM mode, set power error */
+    WMI_DRIVER_FAIL_REASON_POWER_INIT_ERR,
+    WMI_DRIVER_FAIL_REASON_MODE_OFF_ERR,
+} WMI_WLAN_MODE_FAILURE_REASON;
+
+/* Host/Firmware can get/set the status bits using below macros */
+#define WMI_WLAN_DRIVER_MODE_RESP_STATUS_GET(status) WMI_GET_BITS(status, 0, 16)
+#define WMI_WLAN_DRIVER_MODE_RESP_STATUS_SET(status, value) WMI_SET_BITS(status, 0, 16, value)
+
+#define WMI_WLAN_DRIVER_MODE_RESP_FAILURE_GET(mode) WMI_GET_BITS(mode, 16, 16)
+#define WMI_WLAN_DRIVER_MODE_RESP_FAILURE_SET(mode, value) WMI_GET_BITS(mode, 16, 16, value)
+
+/* WMI evt to acknowledge the driver mode sent by host */
+typedef struct {
+    /** TLV tag and len; tag equals
+     * WMITLV_TAG_STRUC_wmi_wlan_mode_resp_event_fixed_param */
+    A_UINT32 tlv_header;
+    /* The status word contains the following bitfields:
+     * bits 15:0  - Indicates whether the FW has accepted
+     *              (WMI_DRIVER_MODE_RESP_SUCCESS) or rejected
+     *              (WMI_DRIVER_MODE_RESP_FAILURE) the driver mode
+     *              specified by the host.
+     * bits 31:16 - Indicates the reason if the FW has rejected
+     *              the driver mode.
+     *              This field is only relevant if the status is
+     *              WMI_DRIVER_MODE_RESP_FAILURE.
+     */
+    A_UINT32 status;
+} wmi_wlan_mode_resp_event_fixed_param;
 
 
 
