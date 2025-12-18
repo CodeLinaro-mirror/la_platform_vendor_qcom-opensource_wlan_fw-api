@@ -272,9 +272,13 @@
  * 3.142 Add T2H GLOBAL_PEER_ID_UNMAP def, update H2T MPDUQ_OR_MSDUQ_INFO def.
  * 3.143 Add T2H HAPS msg def.
  * 3.144 Add svc_inst_req_type in htt_h2t_mpduq_or_msduq_info.
+ * 3.145 Add 3rd bit for rx_hdr_len in RX_RING_SELECTION_CFG
+ * 3.146 Add HTT_RXOLE_ASE_STATUS_RING def.
+ * 3.147 Add direct_refill flag in SRING_SETUP msg.
+ * 3.148 Add HTT_PEER_CFR_CAPTURE_BW_320MHZ def.
  */
 #define HTT_CURRENT_VERSION_MAJOR 3
-#define HTT_CURRENT_VERSION_MINOR 144
+#define HTT_CURRENT_VERSION_MINOR 148
 
 #define HTT_NUM_TX_FRAG_DESC  1024
 
@@ -877,6 +881,9 @@ typedef enum {
     HTT_STATS_TXBF_OFDMA_BN_STEER_TAG               = 229, /* htt_stats_txbf_ofdma_bn_steer_tlv */
     HTT_STATS_TXBF_OFDMA_BN_STEER_MPDU_TAG          = 230, /* htt_stats_txbf_ofdma_bn_steer_mpdu_tlv */
     HTT_STATS_TXBF_OFDMA_BN_PARBW_TAG               = 231, /* htt_stats_txbf_ofdma_bn_parbw_tlv */
+    HTT_STATS_OPTIONAL_CONFIGS_TAG                  = 232, /* htt_stats_optional_configs_tlv */
+    HTT_STATS_PDEV_SAM_TAG                          = 233, /* htt_stats_pdev_sam_tlv */
+
 
     HTT_STATS_MAX_TAG,
 } htt_stats_tlv_tag_t;
@@ -5492,7 +5499,8 @@ PREPACK struct htt_sring_setup_t {
              prefetch_timer_cfg:  3,
              response_required:   1,
              ipa_drop_flag:      1,
-             reserved1:          11;
+             direct_refill:      1,
+             reserved1:          10;
     A_UINT32 ipa_drop_low_threshold:    8,
              ipa_drop_high_threshold:   8,
              reserved:                  16;
@@ -5525,6 +5533,7 @@ enum htt_srng_ring_id {
     HTT_RXDMA_WBM_BUF0_RING,       /* used for SFE Datapath */
     HTT_RXDMA_WBM_BUF1_RING,       /* used for PPE Datapath */
     HTT_RXDMA_WBM_BUF2_RING,       /* used for MGMT path */
+    HTT_RXOLE_ASE_STATUS_RING,     /* RxOLE2SW ASE Status ring */
     /* Add Other SRING which can't be directly configured by host software above this line */
 };
 
@@ -5849,6 +5858,27 @@ enum htt_srng_ring_id {
             ((_var) |= ((_val) << HTT_SRING_SETUP_RESPONSE_REQUIRED_S)); \
         } while (0)
 
+#define HTT_SRING_SETUP_IPA_DROP_FLAG_M        0x00100000
+#define HTT_SRING_SETUP_IPA_DROP_FLAG_S        20
+#define HTT_SRING_SETUP_IPA_DROP_FLAG_GET(_var) \
+        (((_var) & HTT_SRING_SETUP_IPA_DROP_FLAG_M) >> \
+                HTT_SRING_SETUP_IPA_DROP_FLAG_S)
+#define HTT_SRING_SETUP_IPA_DROP_FLAG_SET(_var, _val) \
+        do { \
+            HTT_CHECK_SET_VAL(HTT_SRING_SETUP_IPA_DROP_FLAG, _val); \
+            ((_var) |= ((_val) << HTT_SRING_SETUP_IPA_DROP_FLAG_S)); \
+        } while (0)
+
+#define HTT_SRING_SETUP_DIRECT_REFILL_M        0x00200000
+#define HTT_SRING_SETUP_DIRECT_REFILL_S        21
+#define HTT_SRING_SETUP_DIRECT_REFILL_GET(_var) \
+        (((_var) & HTT_SRING_SETUP_DIRECT_REFILL_M) >> \
+                HTT_SRING_SETUP_DIRECT_REFILL_S)
+#define HTT_SRING_SETUP_DIRECT_REFILL_SET(_var, _val) \
+        do { \
+            HTT_CHECK_SET_VAL(HTT_SRING_SETUP_DIRECT_REFILL, _val); \
+            ((_var) |= ((_val) << HTT_SRING_SETUP_DIRECT_REFILL_S)); \
+        } while (0)
 
 /**
  * @brief host -> target RX ring selection config message
@@ -5867,7 +5897,7 @@ enum htt_srng_ring_id {
  *    |-----+--+--+--+--+--+-----------------+----+---+---+---+---------------|
  *    |rsvd1|ED|DT|OV|PS|SS|      ring_id    |     pdev_id    |    msg_type   |
  *    |--------------------------+-----+-----+--------------------------------|
- *    | rsvd2  |RX|RXHDL|   CLD  | CLC | CLM |           ring_buffer_size     |
+ *    |rsvd2|HE|RX|RXHDL|   CLD  | CLC | CLM |           ring_buffer_size     |
  *    |-----------------------------------------------------------------------|
  *    |                           packet_type_enable_flags_0                  |
  *    |-----------------------------------------------------------------------|
@@ -5901,6 +5931,7 @@ enum htt_srng_ring_id {
  *     CLD = config_length_data
  *     RXHDL = rx_hdr_len
  *     RX = rxpcu_filter_enable_flag
+ *     HE = rx_hdr_len extension
  * The message is interpreted as follows:
  * dword0 - b'0:7   - msg_type: This will be set to
  *                    0xc (HTT_H2T_MSG_TYPE_RX_RING_SELECTION_CFG)
@@ -5966,7 +5997,18 @@ enum htt_srng_ring_id {
  *                    be zero which means allow all frames for MD at RxOLE
  *                    host wil fiter out frames.
  *                    RxPCU (Filter IN) -> RxOLE (Filter In/Filter Out)
- *          b'28:31 - rsvd2: Reserved for future use
+ *          b'28    - rx_hdr_len_ext:
+ *                    Extend rx_hdr_len to 3 bits with b'28 as MSb.
+ *                    Valid combined values:
+ *                    001 - 64bytes
+ *                    010 - 128bytes
+ *                    011 - 256bytes
+ *                    100 - 512bytes
+ *                    101 - 1024bytes
+ *                    110 - 2048bytes
+ *                    111 - max bytes supported by HW
+ *                    default - 128 bytes
+ *          b'29:31 - rsvd2: Reserved for future use
  * dword2 - b'0:31  - packet_type_enable_flags_0:
  *                    Enable MGMT packet from 0b0000 to 0b1001
  *                    bits from low to high: FP, MD, MO - 3 bits
@@ -6133,7 +6175,8 @@ PREPACK struct htt_rx_ring_selection_cfg_t {
              config_length_data:3,
              rx_hdr_len:        2,
              rxpcu_filter_enable_flag:1,
-             rsvd2:             4;
+             rx_hdr_len_ext:    1,
+             rsvd2:             3;
     A_UINT32 packet_type_enable_flags_0;
     A_UINT32 packet_type_enable_flags_1;
     A_UINT32 packet_type_enable_flags_2;
@@ -6335,14 +6378,25 @@ PREPACK struct htt_rx_ring_selection_cfg_t {
 
 #define HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_M                 0x06000000
 #define HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_S                 25
+#define HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_EXT_M             0x10000000
+#define HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_EXT_S             28
+#define HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_CHK_M             0x7
+#define HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_CHK_S             0
 #define HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_GET(_var) \
-                (((_var) & HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_M) >> \
-                                      HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_S)
+    ((((_var) & HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_EXT_M) >> \
+                (HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_EXT_S-2)) | \
+     (((_var) & HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_M) >> \
+                HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_S))
 #define HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_SET(_var, _val) \
-            do { \
-                HTT_CHECK_SET_VAL( HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN, _val); \
-                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_S));\
-            } while(0)
+    do { \
+        HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_CHK, _val); \
+        ((_var) |= (((_val) << \
+            HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_S) & \
+            HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_M)); \
+        ((_var) |= (((_val) << \
+            (HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_EXT_S-2)) & \
+            HTT_RX_RING_SELECTION_CFG_RX_HDR_LEN_EXT_M)); \
+    } while(0)
 
 #define HTT_RX_RING_SELECTION_CFG_RXPCU_FILTER_M               0x08000000
 #define HTT_RX_RING_SELECTION_CFG_RXPCU_FILTER_S               27
@@ -20024,6 +20078,7 @@ typedef enum {
     HTT_PEER_CFR_CAPTURE_BW_80MHZ    = 2,
     HTT_PEER_CFR_CAPTURE_BW_160MHZ   = 3,
     HTT_PEER_CFR_CAPTURE_BW_80_80MHZ = 4,
+    HTT_PEER_CFR_CAPTURE_BW_320MHZ   = 5,
     HTT_PEER_CFR_CAPTURE_BW_MAX,
 } HTT_PEER_CFR_CAPTURE_BW;
 
