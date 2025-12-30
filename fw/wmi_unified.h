@@ -747,6 +747,13 @@ typedef enum {
     /** WMI cmd used to control DPS Assisting AP role config */
     WMI_VDEV_ENERGY_MGMT_DPS_ASSISTING_ROLE_CONFIG_CMDID,
 
+    /** WMI cmd for unified connect */
+    WMI_VDEV_UNIFIED_CONNECT_CMDID,
+
+    /** WMI cmd for unified disconnect */
+    WMI_VDEV_UNIFIED_DISCONNECT_CMDID,
+
+
     /* peer specific commands */
 
     /** create a peer */
@@ -2070,6 +2077,10 @@ typedef enum {
     WMI_VDEV_OOB_CONNECTION_RESP_EVENTID,
     WMI_VDEV_VBSS_CONFIG_EVENTID,
     WMI_VDEV_TPC_IE_POWER_EVENTID,
+    /** WMI event for unified connect */
+    WMI_VDEV_UNIFIED_CONNECT_EVENTID,
+    /** WMI event for unified disconnect */
+    WMI_VDEV_UNIFIED_DISCONNECT_EVENTID,
 
     /* peer specific events */
     /** FW reauet to kick out the station for reasons like inactivity,lack of response ..etc */
@@ -10245,6 +10256,12 @@ typedef enum {
 
     /** Beacon antenna for smart antenna */
     WMI_PDEV_PARAM_SMART_ANTENNA_BEACON_ANTENNA,
+
+    /*
+     * The extra early rx duration (in usec units) when
+     * adaptive early rx is disabled
+     */
+    WMI_PDEV_PARAM_ADAPTIVE_EARLY_RX_EXTRA_SLEEP_SLOP,
 } WMI_PDEV_PARAM;
 
 #define WMI_PDEV_ONLY_BSR_TRIG_IS_ENABLED(trig_type) WMI_GET_BITS(trig_type, 0, 1)
@@ -17735,10 +17752,10 @@ typedef enum {
 } wmi_vdev_update_mac_addr_conf_status;
 
 /** values for vdev_type */
-#define WMI_VDEV_TYPE_AP         0x1
-#define WMI_VDEV_TYPE_STA        0x2
-#define WMI_VDEV_TYPE_IBSS       0x3
-#define WMI_VDEV_TYPE_MONITOR    0x4
+#define WMI_VDEV_TYPE_AP            0x1
+#define WMI_VDEV_TYPE_STA           0x2
+#define WMI_VDEV_TYPE_IBSS          0x3
+#define WMI_VDEV_TYPE_MONITOR       0x4
 
 /** VDEV type is for social wifi interface.This VDEV is Currently mainly needed
 * by FW to execute the NAN specific WMI commands and also implement NAN specific
@@ -17747,14 +17764,16 @@ typedef enum {
 * WMI command to create this VDEV once during initialization and host is not
 * expected to use any VDEV specific WMI commands on this VDEV.
 **/
-#define WMI_VDEV_TYPE_NAN        0x5
+#define WMI_VDEV_TYPE_NAN           0x5
 
-#define WMI_VDEV_TYPE_OCB        0x6
+#define WMI_VDEV_TYPE_OCB           0x6
 
 /* NAN Data Interface */
-#define WMI_VDEV_TYPE_NDI        0x7
+#define WMI_VDEV_TYPE_NDI           0x7
 
-#define WMI_VDEV_TYPE_MESH_POINT 0x8
+#define WMI_VDEV_TYPE_MESH_POINT    0x8
+
+#define WMI_VDEV_TYPE_WIFI_PASSTHRU 0x9
 
 /*
  * Param values to be sent for WMI_VDEV_PARAM_SGI command
@@ -19915,6 +19934,12 @@ typedef enum {
      */
     WMI_VDEV_PARAM_DSMPS_CONTROL,                         /* 0xCC */
 
+    /*
+     * Support P2P GO cancel long duration one-shot NOA
+     *      0 - Disable P2P GO cancel NOA feature - default value
+     *      1 - Enable P2P GO cancel NOA feature
+     */
+    WMI_VDEV_PARAM_SET_GO_CANCEL_NOA,                     /* 0xCD */
 
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
@@ -21032,6 +21057,15 @@ enum wmi_sta_powersave_param {
      *  Value determines the ITO level to apply
      */
     WMI_STA_PS_PARAM_ITO_LEVEL = 13,
+
+    /**
+     * TX/RX inactivity time in msec before going to sleep in wow.
+     *
+     * The power save SM will monitor tx/rx activity on the VDEV, if no
+     * activity for the specified msec of the parameter the Power save SM will
+     * go to sleep.
+     */
+    WMI_STA_PS_PARAM_INACTIVITY_TIME_WOW = 14,
 };
 
 typedef struct {
@@ -21565,7 +21599,7 @@ typedef struct {
     union {
         struct {
             A_UINT32 hw_peer_id_valid :1,
-                     is_llbi_peer:     1,
+                     is_11bi_peer     :1,
                      reserved         :30;
         };
         A_UINT32 flags;
@@ -22972,6 +23006,19 @@ typedef struct {
      * If per_chain_noise_floor value is 0 then it should be ignored.
      */
     A_UINT32 per_chain_noise_floor[WMI_MAX_CHAINS];
+    /**
+     * FW will update the Noise Floor in dBr and send it to host
+     * if this field is set then host will display NF value in dBr
+     */
+    A_UINT32 nf_db_is_valid;
+    /**
+     * Noise Floor (NF) value in dBr. If the NF is not converged then
+     * NF value is returned as 0 to host. Theoretical minimum NF value
+     * is -101 dB for 20 MHz bandwidth and the max value can be 0.
+     * PHY reports 0 incase of very high NF values.
+     * This field should be ignored unless the nf_db_is_valid flag is set.
+     */
+    A_UINT32 noise_floor_in_db;
 
 /**
  * Following this structure is the optional TLV:
@@ -27915,13 +27962,36 @@ typedef struct {
      *     0 - need check sub channel marking
      *     1 - full bandwidth need put to NOL
      *     Refer to WMI_RADAR_FLAGS_FULL_BW_NOL_GET and _SET macros
-     * [1:31] reserved
+     *
+     * Bits 1-7:
+     *     RADAR TYPE field (currently reserved for future use)
+     *     When implemented, this field will indicate the type of
+     *     radar detected.
+     *     The meaning of the different values of this radar type field
+     *     will be specified in the future.
+     *     Refer to WMI_RADAR_FLAGS_RADAR_TYPE_GET and _SET macros.
+     *
+     * Bits 8-15:
+     *     RADAR RSSI in dBm in the range of -128 to +127.
+     *     This 8-bit value is interpreted as a twos-complement signed number
+     *     (so for example, 0x80 = -128, 0x0 = 0, and 0x7f = 127).
+     *     This bit field is valid only if the
+     *     WMI_SERVICE_RADAR_FLAGS_RSSI_DBM_SUPPORT
+     *     wmi service flag is set.
+     *
+     * [16:31] reserved
      */
     A_UINT32 flags;
 }  WMI_RADAR_FLAGS;
 
 #define WMI_RADAR_FLAGS_FULL_BW_NOL_BITPOS    0
 #define WMI_RADAR_FLAGS_FULL_BW_NOL_NUM_BITS  1
+
+#define WMI_RADAR_FLAGS_RADAR_TYPE_BITPOS     1
+#define WMI_RADAR_FLAGS_RADAR_TYPE_NUM_BITS   7
+
+#define WMI_RADAR_FLAGS_RSSI_DBM_BITPOS       8
+#define WMI_RADAR_FLAGS_RSSI_DBM_NUM_BITS     8
 
 #define WMI_RADAR_FLAGS_FULL_BW_NOL_GET(flag) \
     WMI_GET_BITS(flag, \
@@ -27931,6 +28001,25 @@ typedef struct {
     WMI_SET_BITS(flag, \
         WMI_RADAR_FLAGS_FULL_BW_NOL_BITPOS, \
         WMI_RADAR_FLAGS_FULL_BW_NOL_NUM_BITS, val)
+
+#define WMI_RADAR_FLAGS_RADAR_TYPE_GET(flag) \
+    WMI_GET_BITS(flag, \
+        WMI_RADAR_FLAGS_RADAR_TYPE_BITPOS, \
+        WMI_RADAR_FLAGS_RADAR_TYPE_NUM_BITS)
+#define WMI_RADAR_FLAGS_RADAR_TYPE_SET(flag, val) \
+    WMI_SET_BITS(flag, \
+        WMI_RADAR_FLAGS_RADAR_TYPE_BITPOS, \
+        WMI_RADAR_FLAGS_RADAR_TYPE_NUM_BITS, val)
+
+#define WMI_RADAR_FLAGS_RSSI_DBM_GET(flag) \
+    ((A_INT8)WMI_GET_BITS(flag, \
+        WMI_RADAR_FLAGS_RSSI_DBM_BITPOS, \
+        WMI_RADAR_FLAGS_RSSI_DBM_NUM_BITS))
+#define WMI_RADAR_FLAGS_RSSI_DBM_SET(flag, val) \
+    WMI_SET_BITS(flag, \
+        WMI_RADAR_FLAGS_RSSI_DBM_BITPOS, \
+        WMI_RADAR_FLAGS_RSSI_DBM_NUM_BITS, val)
+
 
 typedef enum {
     OCAC_COMPLETE = 0,
@@ -29443,6 +29532,7 @@ typedef enum {
     WMI_PEER_CFR_CAPTURE_BW_80MHZ    = 2,
     WMI_PEER_CFR_CAPTURE_BW_160MHZ   = 3,
     WMI_PEER_CFR_CAPTURE_BW_80_80MHZ = 4,
+    WMI_PEER_CFR_CAPTURE_BW_320MHZ   = 5,
     WMI_PEER_CFR_CAPTURE_BW_MAX,
 } WMI_PEER_CFR_CAPTURE_BW;
 
@@ -33433,6 +33523,32 @@ typedef enum {
     WMI_USD_SERVICE_PROTOCOL_TYPE_GENERIC = 2,
     WMI_USD_SERVICE_PROTOCOL_TYPE_CSA_MATTER = 3,
 } WMI_USD_SERVICE_PROTOCOL_TYPE;
+
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_unified_connect_cmd_fixed_param */
+    /** unique id identifying the VDEV, generated by the caller */
+    A_UINT32 vdev_id;
+} wmi_vdev_unified_connect_cmd_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_unified_disconnect_cmd_fixed_param */
+    /** unique id identifying the VDEV, generated by the caller */
+    A_UINT32 vdev_id;
+} wmi_vdev_unified_disconnect_cmd_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_unified_connect_event_fixed_param */
+    /** unique id identifying the VDEV, generated by the caller */
+    A_UINT32 vdev_id;
+} wmi_vdev_unified_connect_event_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_unified_disconnect_event_fixed_param */
+    /** unique id identifying the VDEV, generated by the caller */
+    A_UINT32 vdev_id;
+} wmi_vdev_unified_disconnect_event_fixed_param;
+
 
 #define EXPIRY_TIME_IN_TSF_TIMESTAMP_OFFSET     0
 #define EXPIRY_TIME_IN_TSF_TIMESTAMP_MASK       1
@@ -37937,6 +38053,8 @@ typedef enum {
     WMI_REQUEST_CTRL_PATH_PDEV_CONN_STAT    = 21,
     WMI_REQUEST_CTRL_PATH_ML_RECONFIG_STAT  = 22,
     WMI_REQUEST_CTRL_PATH_STA_DAR_STAT      = 23,
+    WMI_REQUEST_ENHANCED_STAT               = 24,
+    WMI_REQUEST_CTRL_PATH_EM_PCIE_STAT      = 25,
 } wmi_ctrl_path_stats_id;
 
 typedef enum {
@@ -47184,6 +47302,88 @@ typedef struct {
     wmi_mac_addr mac_addr;      /* Peer MAC address (all zeros for filter capture) */
     A_UINT32 request;           /* WMI_PEER_CFR_CAPTURE_ENABLE/DISABLE (0 for filter capture) */
 } wmi_cfr_capture_filter_resp_event_fixed_param;
+
+
+/* max beacon bmiss bitmask array size, in 32-bit words */
+#define WMI_MAX_BCN_BMISS_HISTORY_LENGTH 8
+
+/* max MCS counters supported for enhance stats */
+#define WMI_ENHANCE_STATS_MAX_MCS_COUNTERS 16
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_beacon_stats */
+    A_UINT32 vdev_id; /* ID of the vdev these beacon stats are from */
+    /* length:
+     * Number of A_UINT32 elements within the bmiss_bitmask array which
+     * contain valid data.
+     * Array elements beyond this limit should be ignored.
+     */
+    A_UINT32 length;
+    /* bmiss_bitmask:
+     * Beacon miss bitmask indicating which beacons got missed from up to
+     * the last 255 expected beacons (32*8 bits).
+     * Only bmiss_bitmask[0] through bmiss_bitmask[length-1] (inclusive)
+     * contain valid data.
+     */
+    A_UINT32 bmiss_bitmask[WMI_MAX_BCN_BMISS_HISTORY_LENGTH];
+} wmi_vdev_beacon_stats;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_qdata_congestion_stats */
+    A_UINT32 vdev_id; /* ID of the vdev these congestion stats are from */
+    /* cca_busy_time:
+     * Number of milliseconds during which CCA is busy,
+     * out of total time spent on the channel
+     */
+    A_UINT32 cca_busy_time;
+    /* on_time:
+     * Total time in milliseconds for which we were on the channel
+     * and monitored
+     */
+    A_UINT32 on_time;
+} wmi_vdev_congestion_stats;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_data_stats */
+    A_UINT32 vdev_id; /* ID of the vdev these data stats are from */
+    /* Set of TX MCS counters for data PPDUs */
+    A_UINT32 tx_mcs_data_ppdu[WMI_ENHANCE_STATS_MAX_MCS_COUNTERS];
+    /* Set of TX BW counters for data PPDUs */
+    A_UINT32 tx_bw_data_ppdu[WMI_STATS_EXT_EVENT_VDEV_EXT_BW_COUNTERS_MAX];
+    /* Set of RX MCS counters for data PPDUs */
+    A_UINT32 rx_mcs_data_ppdu[WMI_ENHANCE_STATS_MAX_MCS_COUNTERS];
+    /* Set of RX BW counters for data PPDUs */
+    A_UINT32 rx_bw_data_ppdu[WMI_STATS_EXT_EVENT_VDEV_EXT_BW_COUNTERS_MAX];
+} wmi_vdev_data_stats;
+
+
+#define WMI_EM_PCIE_MAX_CHIP 4
+#define WMI_EM_PCIE_MAX_NUM_MAC 3
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_em_pcie_stats */
+    A_UINT32 is_cumac; /* set to '1' if SoC has CUMAC, else set to '0' */
+    A_UINT32 enable;   /* set to '1' if feature enable, else set to '0' */
+    A_UINT32 config_type; /* feature configuration type */
+    /* mlo_partner_chip_bw:
+     * MLO partner chip BW information, represented as a FW-internal BW enum
+     * (Thus, this field is intended only for interactive debugging, and not
+     * for interpretation by the host SW.)
+     */
+    A_UINT32 mlo_partner_bw[WMI_EM_PCIE_MAX_CHIP];
+    /* mlo_partner_nss: MLO partner chip NSS information */
+    A_UINT32 mlo_partner_nss[WMI_EM_PCIE_MAX_CHIP];
+    /* pdev_bw:
+     * Per PDEV BW, represented as a FW-internal BW enum
+     * (Thus, this field is intended only for interactive debugging, and not
+     * for interpretation by the host SW.)
+     */
+    A_UINT32 pdev_bw[WMI_EM_PCIE_MAX_NUM_MAC];
+    A_UINT32 curr_pcie_gen;      /* current PCIe generation number */
+    A_UINT32 curr_pcie_lanes;    /* current number of PCIe lanes */
+    A_UINT32 pending_pcie_gen;   /* pending PCIe generation number */
+    A_UINT32 pending_pcie_lanes; /* pending number of PCIe lanes */
+} wmi_em_pcie_stats;
 
 
 #define WMI_UNIFIED_CHAIN_PHASE_MASK 0x0000ffff
