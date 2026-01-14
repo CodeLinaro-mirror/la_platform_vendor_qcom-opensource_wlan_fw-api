@@ -10869,6 +10869,21 @@ typedef struct {
      * ack_rssi is reported in dBm.
      */
     A_INT32    ack_rssi;
+
+    /* ieee_link_id_valid:
+     * For MLO cases, ieee_link_id_valid is set to 1, which indicates that
+     * the ieee_link_id field contains a valid value.
+     * For non-MLO and legacy cases, ieee_link_id_valid is set to 0, which
+     * means ignore the ieee_link_id field.
+     */
+    A_UINT32   ieee_link_id_valid;
+    /* ieee_link_id:
+     * For MLO cases, this indicates the link on which the QoS Null frame
+     * is sent.
+     * For non-MLO cases, this is not required because the QoS Null frame
+     * is sent on the connected link.
+     */
+    A_UINT32   ieee_link_id;
 } wmi_qos_null_frame_tx_compl_event_fixed_param;
 
 typedef struct {
@@ -19941,6 +19956,20 @@ typedef enum {
      */
     WMI_VDEV_PARAM_SET_GO_CANCEL_NOA,                     /* 0xCD */
 
+    /*
+     * WMI command to set ACK rate
+     * param_value refer to rate code (legacy CCK/OFDM rates) definitions
+     * for ACK Rates
+     * valid values:
+     *      ACK_RATE_CODE_6MBPS_OFDM (0x003):   Set 6Mbps OFDM ACK rate
+     *      ACK_RATE_CODE_12MBPS_OFDM (0x002):  Set 12Mbps OFDM ACK rate
+     *      ACK_RATE_CODE_24MBPS_OFDM (0x001):  Set 24Mbps OFDM ACK rate
+     *      ...
+     *      ACK_RATE_RESTORE_ORIGINAL (0xFFFF): Restore original rates
+     */
+    WMI_VDEV_PARAM_ACK_RATE,                              /* 0xCE */
+
+
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
      * The below vdev param types are used for prototyping, and are
@@ -22808,7 +22837,8 @@ typedef struct {
                       */
                      peer_cck_rx_support_5ghz : 1,
                      peer_cck_tx_support_5ghz : 1,
-                     reserved                 :28;
+                     sam_peer_id_valid        : 1,
+                     reserved                 :27;
         };
         A_UINT32 flags;
     };
@@ -22818,7 +22848,8 @@ typedef struct {
     A_UINT32 hw_peer_id;
     /** peer type: see enum values above */
     A_UINT32 peer_type;
-
+    /** Global SAM Peer ID, valid only if sam_peer_id_valid is set */
+    A_UINT32 sam_peer_id;
 
 /* Following this struct are the TLV's:
  *     A_UINT8 peer_legacy_rates[];
@@ -27389,26 +27420,47 @@ typedef struct {
 } wmi_pdev_set_rx_filter_promiscuous_cmd_fixed_param;
 
 typedef enum {
-    WMI_BEACON_INFO_PRESENCE_OUI_EXT            = 1 <<  0,
-    WMI_BEACON_INFO_PRESENCE_MAC_ADDRESS        = 1 <<  1,
-    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_NSS  = 1 <<  2,
-    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_HT   = 1 <<  3,
-    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_VHT  = 1 <<  4,
-    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_BAND = 1 <<  5,
+    WMI_BEACON_INFO_PRESENCE_OUI_EXT               = 1 << 0,
+    WMI_BEACON_INFO_PRESENCE_MAC_ADDRESS           = 1 << 1,
+    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_NSS     = 1 << 2,
+    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_HT      = 1 << 3,
+    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_VHT     = 1 << 4,
+    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_BAND    = 1 << 5,
+    WMI_BEACON_INFO_PRESENCE_EXCLUSIVE_MAC_ADDRESS = 1 << 6,
 } wmi_beacon_info_presence_items;
 
 typedef struct _wmi_vendor_oui_ext {
     A_UINT32 tlv_header;
-    A_UINT32 buf_data_length;        /* length of data in bytes for this OUI including index byte */
-    A_UINT32 info_presence_bit_mask; /* see enum wmi_beacon_info_presence_items */
-    A_UINT32 oui_header_length;      /* either 3 or 5 bytes */
-    A_UINT32 oui_data_length;        /* length of oui_data to compare in beacon which follows OUI header. Max length is capped to WMI_MAX_VENDOR_OUI_DATA_LENGTH bytes */
-    A_UINT32 mac_address_length;     /* MAC address length in bytes
-                                     ** (This value will always be 6,
-                                     ** but is explicitly specified for sake
-                                     ** of uniformity and completeness).
-                                     */
+
+    /* length of data in bytes for this OUI including index byte */
+    A_UINT32 buf_data_length;
+
+    /* see enum wmi_beacon_info_presence_items */
+    A_UINT32 info_presence_bit_mask;
+
+    A_UINT32 oui_header_length; /* either 3 or 5 bytes */
+
+    /* oui_data_length:
+     * Length of oui_data to compare in beacon which follows OUI header.
+     * Max length is capped to WMI_MAX_VENDOR_OUI_DATA_LENGTH bytes.
+     */
+    A_UINT32 oui_data_length;
+
+    /* mac_address_length:
+     * MAC address length in bytes
+     * (This value will always be 6, but is explicitly specified for sake
+     * of uniformity and completeness).
+     */
+    A_UINT32 mac_address_length;
+
     A_UINT32 capability_data_length; /* length of capability in bytes */
+
+    /* exclusive_mac_address_length:
+     * Exclusive MAC address length in bytes
+     * (This value will always be 6, but is explicitly specified for sake
+     * of uniformity and completeness).
+     */
+    A_UINT32 exclusive_mac_address_length;
 } wmi_vendor_oui_ext;
 
 #define WMI_INFO_CAPABILITY_NSS_MASK                       0x0f
@@ -47364,7 +47416,10 @@ typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_em_pcie_stats */
     A_UINT32 is_cumac; /* set to '1' if SoC has CUMAC, else set to '0' */
     A_UINT32 enable;   /* set to '1' if feature enable, else set to '0' */
-    A_UINT32 config_type; /* feature configuration type */
+    /* config_type:
+     * feature configuration type (holds a wmi_pcie_config_type_e value)
+     */
+    A_UINT32 config_type;
     /* mlo_partner_chip_bw:
      * MLO partner chip BW information, represented as a FW-internal BW enum
      * (Thus, this field is intended only for interactive debugging, and not
