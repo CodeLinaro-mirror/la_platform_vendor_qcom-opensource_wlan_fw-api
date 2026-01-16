@@ -10869,6 +10869,21 @@ typedef struct {
      * ack_rssi is reported in dBm.
      */
     A_INT32    ack_rssi;
+
+    /* ieee_link_id_valid:
+     * For MLO cases, ieee_link_id_valid is set to 1, which indicates that
+     * the ieee_link_id field contains a valid value.
+     * For non-MLO and legacy cases, ieee_link_id_valid is set to 0, which
+     * means ignore the ieee_link_id field.
+     */
+    A_UINT32   ieee_link_id_valid;
+    /* ieee_link_id:
+     * For MLO cases, this indicates the link on which the QoS Null frame
+     * is sent.
+     * For non-MLO cases, this is not required because the QoS Null frame
+     * is sent on the connected link.
+     */
+    A_UINT32   ieee_link_id;
 } wmi_qos_null_frame_tx_compl_event_fixed_param;
 
 typedef struct {
@@ -22808,7 +22823,8 @@ typedef struct {
                       */
                      peer_cck_rx_support_5ghz : 1,
                      peer_cck_tx_support_5ghz : 1,
-                     reserved                 :28;
+                     sam_peer_id_valid        : 1,
+                     reserved                 :27;
         };
         A_UINT32 flags;
     };
@@ -22818,7 +22834,8 @@ typedef struct {
     A_UINT32 hw_peer_id;
     /** peer type: see enum values above */
     A_UINT32 peer_type;
-
+    /** Global SAM Peer ID, valid only if sam_peer_id_valid is set */
+    A_UINT32 sam_peer_id;
 
 /* Following this struct are the TLV's:
  *     A_UINT8 peer_legacy_rates[];
@@ -23006,6 +23023,19 @@ typedef struct {
      * If per_chain_noise_floor value is 0 then it should be ignored.
      */
     A_UINT32 per_chain_noise_floor[WMI_MAX_CHAINS];
+    /**
+     * FW will update the Noise Floor in dBr and send it to host
+     * if this field is set then host will display NF value in dBr
+     */
+    A_UINT32 nf_db_is_valid;
+    /**
+     * Noise Floor (NF) value in dBr. If the NF is not converged then
+     * NF value is returned as 0 to host. Theoretical minimum NF value
+     * is -101 dB for 20 MHz bandwidth and the max value can be 0.
+     * PHY reports 0 incase of very high NF values.
+     * This field should be ignored unless the nf_db_is_valid flag is set.
+     */
+    A_UINT32 noise_floor_in_db;
 
 /**
  * Following this structure is the optional TLV:
@@ -27376,26 +27406,47 @@ typedef struct {
 } wmi_pdev_set_rx_filter_promiscuous_cmd_fixed_param;
 
 typedef enum {
-    WMI_BEACON_INFO_PRESENCE_OUI_EXT            = 1 <<  0,
-    WMI_BEACON_INFO_PRESENCE_MAC_ADDRESS        = 1 <<  1,
-    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_NSS  = 1 <<  2,
-    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_HT   = 1 <<  3,
-    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_VHT  = 1 <<  4,
-    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_BAND = 1 <<  5,
+    WMI_BEACON_INFO_PRESENCE_OUI_EXT               = 1 << 0,
+    WMI_BEACON_INFO_PRESENCE_MAC_ADDRESS           = 1 << 1,
+    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_NSS     = 1 << 2,
+    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_HT      = 1 << 3,
+    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_VHT     = 1 << 4,
+    WMI_BEACON_INFO_PRESENCE_AP_CAPABILITY_BAND    = 1 << 5,
+    WMI_BEACON_INFO_PRESENCE_EXCLUSIVE_MAC_ADDRESS = 1 << 6,
 } wmi_beacon_info_presence_items;
 
 typedef struct _wmi_vendor_oui_ext {
     A_UINT32 tlv_header;
-    A_UINT32 buf_data_length;        /* length of data in bytes for this OUI including index byte */
-    A_UINT32 info_presence_bit_mask; /* see enum wmi_beacon_info_presence_items */
-    A_UINT32 oui_header_length;      /* either 3 or 5 bytes */
-    A_UINT32 oui_data_length;        /* length of oui_data to compare in beacon which follows OUI header. Max length is capped to WMI_MAX_VENDOR_OUI_DATA_LENGTH bytes */
-    A_UINT32 mac_address_length;     /* MAC address length in bytes
-                                     ** (This value will always be 6,
-                                     ** but is explicitly specified for sake
-                                     ** of uniformity and completeness).
-                                     */
+
+    /* length of data in bytes for this OUI including index byte */
+    A_UINT32 buf_data_length;
+
+    /* see enum wmi_beacon_info_presence_items */
+    A_UINT32 info_presence_bit_mask;
+
+    A_UINT32 oui_header_length; /* either 3 or 5 bytes */
+
+    /* oui_data_length:
+     * Length of oui_data to compare in beacon which follows OUI header.
+     * Max length is capped to WMI_MAX_VENDOR_OUI_DATA_LENGTH bytes.
+     */
+    A_UINT32 oui_data_length;
+
+    /* mac_address_length:
+     * MAC address length in bytes
+     * (This value will always be 6, but is explicitly specified for sake
+     * of uniformity and completeness).
+     */
+    A_UINT32 mac_address_length;
+
     A_UINT32 capability_data_length; /* length of capability in bytes */
+
+    /* exclusive_mac_address_length:
+     * Exclusive MAC address length in bytes
+     * (This value will always be 6, but is explicitly specified for sake
+     * of uniformity and completeness).
+     */
+    A_UINT32 exclusive_mac_address_length;
 } wmi_vendor_oui_ext;
 
 #define WMI_INFO_CAPABILITY_NSS_MASK                       0x0f
@@ -38041,6 +38092,7 @@ typedef enum {
     WMI_REQUEST_CTRL_PATH_ML_RECONFIG_STAT  = 22,
     WMI_REQUEST_CTRL_PATH_STA_DAR_STAT      = 23,
     WMI_REQUEST_ENHANCED_STAT               = 24,
+    WMI_REQUEST_CTRL_PATH_EM_PCIE_STAT      = 25,
 } wmi_ctrl_path_stats_id;
 
 typedef enum {
@@ -47341,6 +47393,35 @@ typedef struct {
     /* Set of RX BW counters for data PPDUs */
     A_UINT32 rx_bw_data_ppdu[WMI_STATS_EXT_EVENT_VDEV_EXT_BW_COUNTERS_MAX];
 } wmi_vdev_data_stats;
+
+
+#define WMI_EM_PCIE_MAX_CHIP 4
+#define WMI_EM_PCIE_MAX_NUM_MAC 3
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_em_pcie_stats */
+    A_UINT32 is_cumac; /* set to '1' if SoC has CUMAC, else set to '0' */
+    A_UINT32 enable;   /* set to '1' if feature enable, else set to '0' */
+    A_UINT32 config_type; /* feature configuration type */
+    /* mlo_partner_chip_bw:
+     * MLO partner chip BW information, represented as a FW-internal BW enum
+     * (Thus, this field is intended only for interactive debugging, and not
+     * for interpretation by the host SW.)
+     */
+    A_UINT32 mlo_partner_bw[WMI_EM_PCIE_MAX_CHIP];
+    /* mlo_partner_nss: MLO partner chip NSS information */
+    A_UINT32 mlo_partner_nss[WMI_EM_PCIE_MAX_CHIP];
+    /* pdev_bw:
+     * Per PDEV BW, represented as a FW-internal BW enum
+     * (Thus, this field is intended only for interactive debugging, and not
+     * for interpretation by the host SW.)
+     */
+    A_UINT32 pdev_bw[WMI_EM_PCIE_MAX_NUM_MAC];
+    A_UINT32 curr_pcie_gen;      /* current PCIe generation number */
+    A_UINT32 curr_pcie_lanes;    /* current number of PCIe lanes */
+    A_UINT32 pending_pcie_gen;   /* pending PCIe generation number */
+    A_UINT32 pending_pcie_lanes; /* pending number of PCIe lanes */
+} wmi_em_pcie_stats;
 
 
 #define WMI_UNIFIED_CHAIN_PHASE_MASK 0x0000ffff
