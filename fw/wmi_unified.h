@@ -1379,6 +1379,8 @@ typedef enum {
 
     /** IPA Offload features related commands */
     WMI_IPA_OFFLOAD_ENABLE_DISABLE_CMDID = WMI_CMD_GRP_START_ID(WMI_GRP_IPA),
+    /** WMI cmd to get IPA ring stats */
+    WMI_IPA_RING_STATS_REQ_CMDID,
 
     /** mDNS responder offload commands */
     WMI_MDNS_OFFLOAD_ENABLE_CMDID = WMI_CMD_GRP_START_ID(WMI_GRP_MDNS_OFL),
@@ -2242,6 +2244,9 @@ typedef enum {
 
     /* mDNS offload events */
     WMI_MDNS_STATS_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_MDNS_OFL),
+
+    /** WMI Event to send IPA ring stats to host */
+    WMI_IPA_RING_STATS_CONF_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_IPA),
 
     /* SAP Authentication offload events */
     WMI_SAP_OFL_ADD_STA_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_SAP_OFL),
@@ -12332,6 +12337,11 @@ typedef struct {
      * (end of packet)
      */
     A_UINT32 rx_other_11ax_msdu_cnt;
+    /** pending_mpdu_msdus:
+     * count of the pending mpdu + msdus for all tids within all peers
+     * for the specified vdev
+     */
+    A_UINT32 pending_mpdu_msdus;
 } wmi_pdev_extd_stats;
 
 /**
@@ -32730,6 +32740,7 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_VDEV_PARAM_ENABLE_SR_PROHIBIT_CMDID);
         WMI_RETURN_STRING(WMI_XGAP_ENABLE_CMDID);
         WMI_RETURN_STRING(WMI_PDEV_MESH_RX_FILTER_ENABLE_CMDID);
+	WMI_RETURN_STRING(WMI_IPA_RING_STATS_REQ_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
@@ -40200,6 +40211,37 @@ typedef struct {
     A_UINT32 status;
 } wmi_livedump_response_event_fixed_param;
 
+/* Optional version for future expansion */
+typedef enum {
+    WMI_IPA_RING_STATS_EVENT_VERSION1 = 1,
+
+} WMI_IPA_RING_STATS_EVENT_VERSIONS;
+
+typedef struct {
+    A_UINT32 tlv_header;
+    /* version:
+     * For future extensions; currently 1 (WMI_IPA_RING_STATS_EVENT_VERSION1)
+     * Refer to WMI_IPA_RING_STATS_EVENT_VERSIONS.
+     */
+    A_UINT32 version;
+    A_UINT32 ring_id;
+} wmi_ipa_ring_stats_req_cmd_fixed_param;
+
+/* Per-ring sample (indices and sizes in entries to keep host parsing simple) */
+typedef struct {
+    A_UINT32 tlv_header;
+    A_UINT32 ring_id;        /* e.g., HAL ring_id or your own enum */
+    A_UINT32 hp_idx;         /* head pointer index (entry index) */
+    A_UINT32 tp_idx;         /* tail pointer index (entry index) */
+    A_UINT32 free_entries;   /* how many entries free */
+    A_UINT32 ring_entries;   /* total entries */
+} wmi_ipa_ring_stat_entry;
+
+/* Event fixed params (TLV-safe layout) */
+typedef struct {
+    A_UINT32 tlv_header;
+    A_UINT32 version; /* Refer to WMI_RING_STATS_EVENT_VERSIONS */
+} wmi_ipa_ring_stats_conf_event_fixed_param;
 
 
 /* ADD NEW DEFS HERE */
