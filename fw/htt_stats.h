@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2021-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2026 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -882,6 +882,22 @@ enum htt_dbg_ext_stats_type {
      */
     HTT_DBG_EXT_STATS_PDEV_FTM_TPCCAL_EXT = 80,
 
+    /** HTT_DBG_EXT_STATS_ANI_HISTOGRAM
+     * PARAMS:
+     *   - No Params
+     * RESP MSG:
+     *   - htt_stats_phy_ani_hist_tlv
+     *   */
+    HTT_DBG_EXT_STATS_ANI_HISTOGRAM = 81,
+
+    /** HTT_DBG_EXT_STATS_RESET_HISTORY
+     * PARAMS:
+     *   - No Params
+     * RESP MSG:
+     *   - htt_stats_reset_history_tlv
+     */
+    HTT_DBG_EXT_STATS_RESET_HISTORY = 82,
+
 
     /* keep this last */
     HTT_DBG_NUM_EXT_STATS = 256,
@@ -1335,18 +1351,6 @@ typedef struct {
     A_UINT32 hw_reaped_sp;
     /** Number of hardware reaped (Tx completed) packets in VLP mode */
     A_UINT32 hw_reaped_vlp;
-    /** num_combined_sched_cmds_success_per_ac:
-     * Total number of successfully transmitted combined sched_cmd
-     * sequences per AC
-     */
-    A_UINT32 num_combined_sched_cmds_success_per_ac[HTT_NUM_AC_WMM];
-    /** Total number of failed combined sched_cmd sequences per AC */
-    A_UINT32 num_combined_sched_cmds_failed_per_ac[HTT_NUM_AC_WMM];
-    /** num_aborted_comb_sched_cmds_per_ac:
-     * Total number of aborted sched_cmds by scheduler before posting
-     * to TAC per AC
-     */
-    A_UINT32 num_aborted_comb_sched_cmds_per_ac[HTT_NUM_AC_WMM];
 } htt_stats_tx_pdev_cmn_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_pdev_cmn_tlv htt_tx_pdev_stats_cmn_tlv;
@@ -3902,6 +3906,15 @@ typedef struct {
      * completed with error(s)
      */
     A_UINT32 standalone_bn_ulmumimo_trigger_err[HTT_NUM_AC_WMM];
+
+    /** 11bn UHR BSRP trigger to DPS client sent over the air */
+    A_UINT32 sta_dps_bn_bsr_trigger[HTT_NUM_AC_WMM];
+    /** 11bn UHR MU RTS trigger to DPS client sent over the air */
+    A_UINT32 sta_dps_bn_mu_rts_trigger[HTT_NUM_AC_WMM];
+    /** 11bn UHR BSRP trigger to DPS client completed with error(s) */
+    A_UINT32 sta_dps_bn_bsr_trigger_err[HTT_NUM_AC_WMM];
+    /** 11bn UHR MU RTS trigger to DPS client completed with errors(s) */
+    A_UINT32 sta_dps_bn_mu_rts_trigger_err[HTT_NUM_AC_WMM];
 } htt_stats_tx_selfgen_bn_tlv;
 
 typedef struct { /* DEPRECATED */
@@ -5486,6 +5499,28 @@ typedef struct {
     A_UINT32 num_subcycles_no_sort;
     /** num of times DPS client is scheduled */
     A_UINT32 num_dps_client_scheduled;
+    /**
+     * Number of first sched_cmd allowed for DL+UL/UL+DL sched_cmd combining
+     */
+    A_UINT32 num_allowed_first_sched_command_for_combining;
+    /**
+     * Number of second sched_cmd allowed for DL+UL/UL+DL sched_cmd combining
+     */
+    A_UINT32 num_allowed_second_command_for_combining;
+    /**
+     * Number of first sched_cmd aborted to avoid DL+UL/UL+DL sched_cmd
+     * combining
+     */
+    A_UINT32 num_aborted_first_sched_command;
+    /**
+     * Number of second sched_cmd aborted to avoid DL+UL/UL+DL sched_cmd
+     * combining
+     */
+    A_UINT32 num_aborted_second_sched_command;
+    /** Number combined sched_cmds sucessfully transmitted */
+    A_UINT32 total_combined_sched_cmds_success;
+    /** Number combined sched_cmds failed to transmit */
+    A_UINT32 total_combined_sched_cmds_failed;
 } htt_stats_tx_pdev_scheduler_txq_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_pdev_scheduler_txq_stats_tlv
@@ -12330,6 +12365,91 @@ typedef struct {
 } htt_vdevs_txrx_stats_t;
 #endif /* ATH_TARGET */
 
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    /** The channel number on which these stats were collected */
+    A_UINT32 chan_num;
+    /** num of records provided */
+    A_UINT32 num_records;
+    /** Indicates the stats collection interval
+     *  Valid Values:
+     *      100  - For the 100 ms interval stats histogram
+     *      1000 - For 1 sec interval histogram
+     */
+    A_UINT32 collection_interval;
+    /** ani_hist_type:
+     * single flag to differentiate histogram type
+     * Valid Values:
+     *      0 - (default) For 1 sec interval histogram
+     *      1 - For granular (100 ms) interval histogram
+     *      2 - 1 sec histogram not enabled
+     *      3 - Granular histogram not enabled
+     */
+    A_UINT32 ani_hist_type;
+} htt_stats_pdev_ani_hist_tlv;
+
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    A_UINT32 rx_ofdma_timing_err_cnt;
+    A_UINT32 rx_cck_fail_cnt;
+    A_UINT32 rx_cck1_fail_cnt;
+    A_UINT32 rx_cck2_fail_cnt;
+    A_UINT32 rx_cck7_fail_cnt;
+    A_UINT32 mactx_abort_cnt;
+    A_UINT32 macrx_abort_cnt;
+    A_UINT32 phytx_abort_cnt;
+    A_UINT32 phyrx_abort_cnt;
+    A_UINT32 phyrx_defer_abort_cnt;
+    A_UINT32 rx_sizing1_event_cnt; /* a.k.a sizing1 */
+    A_UINT32 rx_sizing2_event_cnt; /* a.k.a sizing2 */
+} htt_stats_ani_scalar_tlv;
+
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    /* rx_pkt_cnt -
+     * Received EOP (end-of-packet) count per packet type;
+     * [0] = 11a; [1] = 11b; [2] = 11n; [3] = 11ac; [4] = 11ax;
+     * [5] = GF; [6] = EHT; [7] = WUR; [8] = AZ
+     */
+    A_UINT32 rx_pkt_cnt[9];
+} htt_stats_ani_pkt_cnt_tlv;
+
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    /* rx_pkt_crc_pass_cnt -
+     * CRC pass count per packet type;
+     * [0] = 11a; [1] = 11b; [2] = 11n; [3] = 11ac; [4] = 11ax;
+     * [5] = GF; [6] = EHT; [7] = WUR; [8] = AZ
+     */
+    A_UINT32 rx_pkt_crc_pass_cnt[9];
+} htt_stats_ani_crc_pass_tlv;
+
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    /* per_blk_err_cnt -
+     * Error count per error source;
+     * [0] = unknown; [1] = LSIG; [2] = HTSIG; [3] = VHTSIG; [4] = HESIG;
+     * [5] = RXTD_OTA; [6] = RXTD_FATAL; [7] = DEMF; [8] = ROBE;
+     * [9] = PMI; [10] = TXFD; [11] = TXTD; [12] = PHYRF
+     * [13-15]=RSVD
+     */
+    A_UINT32 per_blk_err_cnt[16];
+} htt_stats_ani_per_blk_err_tlv;
+
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    /* rx_ota_err_cnt -
+     * RXTD OTA (over-the-air) error count per error reason;
+     * [0] = voting fail; [1] = weak det fail; [2] = strong sig fail;
+     * [3] = cck fail; [4] = power surge;
+     * [5] = btcf timing timeout error; [6] = btcf packet detect error;
+     * [7] = coarse timing timeout error
+     * [8-9]=RSVD
+     */
+    A_UINT32 rx_ota_err_cnt[10];
+} htt_stats_ani_ota_err_tlv;
+
+
 /* PAPRD and power boost stats and counters */
 typedef struct {
     htt_tlv_hdr_t tlv_hdr;
@@ -15596,6 +15716,92 @@ typedef struct {
      */
     A_UINT32 mpduq_to_empty_cnt;
 } htt_stats_pdev_sam_tlv;
+
+
+#define HTT_STATS_RESET_HISTORY_MAX_ENTRIES 10
+
+/**
+ * @brief TLV structure for wifistats 82 (reset history)
+ *
+ * This structure holds the last 10 reset history entries.
+ * The entries are copied from the firmware's internal circular buffer.
+ */
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    /**
+     * @brief An array of structures, each holding the details of a single
+     *        reset event. The entries are ordered chronologically from
+     *        oldest to newest.
+     */
+    struct {
+        A_UINT32 timestamp_ms;
+        /* reset_flags is only for debugging, not for host interpretation */
+        A_UINT32 reset_flags;
+        /* reset_cause is only for debugging, not for host interpretation */
+        A_UINT32 reset_cause;
+        /* reset_reason is only for debugging, not for host interpretation */
+        A_UINT32 reset_reason;
+        A_UINT32 phy_mode;
+        union {
+            A_UINT32 channel_freq;
+            struct {
+                A_UINT32
+                    mhz:              16,
+                    band_center_freq1:16;
+            };
+        };
+        union {
+            A_UINT32 channel_info;
+            struct {
+                A_UINT32
+                    flags:    16, /* only for debug, not for host interpret */
+                    phy_id:    8,
+                    swprofile: 8; /* only for debug, not for host interpret */
+            };
+        };
+        union {
+            A_UINT32 home_channel_info;
+            struct {
+                A_UINT32
+                    is_home_chan: 1,
+                    reserved:    31;
+            };
+        };
+        A_UINT32 reserved_dwords[2]; /* reserved for future use */
+    } reset_history[HTT_STATS_RESET_HISTORY_MAX_ENTRIES];
+    A_UINT32 idx;   /** Current write index of the circular buffer */
+    A_UINT32 count; /** Total number of resets captured (up to 10) */
+} htt_stats_reset_history_tlv;
+
+#define HTT_STATS_RESET_HISTORY_MHZ_GET(word) \
+    ((word) & 0x0000ffff)
+#define HTT_STATS_RESET_HISTORY_MHZ_SET(word, value) \
+    ((word) |= ((value) & 0x0000ffff))
+
+#define HTT_STATS_RESET_HISTORY_BAND_CENTER_FREQ1_GET(word) \
+    (((word) & 0xffff0000) >> 16)
+#define HTT_STATS_RESET_HISTORY_BAND_CENTER_FREQ1_SET(word, value) \
+    ((word) |= (((value) << 16) & 0xffff0000))
+
+#define HTT_STATS_RESET_HISTORY_FLAGS_GET(word) \
+    ((word) & 0x0000ffff)
+#define HTT_STATS_RESET_HISTORY_FLAGS_SET(word, value) \
+    ((word) |= ((value) & 0x0000ffff))
+
+#define HTT_STATS_RESET_HISTORY_PHY_ID_GET(word) \
+    (((word) & 0x00ff0000) >> 16)
+#define HTT_STATS_RESET_HISTORY_PHY_ID_SET(word, value) \
+    ((word) |= (((value) << 16) & 0x00ff0000))
+
+#define HTT_STATS_RESET_HISTORY_SWPROFILE_GET(word) \
+    (((word) & 0xff000000) >> 24)
+#define HTT_STATS_RESET_HISTORY_SWPROFILE_SET(word, value) \
+    ((word) |= (((value) << 24) & 0xff000000))
+
+#define HTT_STATS_RESET_HISTORY_IS_HOME_CHAN_GET(word) \
+    (((word) & 0x00000001) >> 0)
+#define HTT_STATS_RESET_HISTORY_IS_HOME_CHAN_SET(word, value) \
+    ((word) |= (((value) << 0) & 0x00000001))
 
 
 #endif /* __HTT_STATS_H__ */
