@@ -904,8 +904,8 @@ typedef enum {
     /** Customize MCS range for specific tid */
     WMI_PEER_TID_RATE_CUSTOM_CMDID,
 
-    /** Peer NPCA CAP Command **/
-    WMI_PEER_NPCA_CAP_CMDID,
+    /** Peer UHR Mode Update Command **/
+    WMI_PEER_UHR_MODE_UPDATE_CMDID,
 
     /* WMI_PEER_ASSOC_V2_CMDID: extended alternative for WMI_PEER_ASSOC_CMDID */
     WMI_PEER_ASSOC_V2_CMDID,
@@ -3172,7 +3172,7 @@ typedef struct _wmi_ppe_threshold {
 #define WMI_MAX_EHTCAP_PHY_SIZE  3
 
 #define WMI_MAX_UHRCAP_MAC_SIZE  4
-#define WMI_MAX_UHRCAP_PHY_SIZE  3
+#define WMI_MAX_UHRCAP_PHY_SIZE  8 /* as per spec recommendation */
 
 /*
  * 0 – index indicated EHT-MCS map for 20Mhz only sta (4 bytes valid)
@@ -3758,6 +3758,10 @@ typedef struct {
 #define WMI_TARGET_CAP_TOTAL_ML_LINKS_NUM_SET(target_cap_flags, value) \
     WMI_SET_BITS(target_cap_flags, 23, 3, value)
 
+#define WMI_TARGET_CAP_FLAGS_RX_PEER_METADATA_VERSION_EXTENSION_GET(target_cap_flags) \
+    WMI_GET_BITS(target_cap_flags, 26, 3)
+#define WMI_TARGET_CAP_FLAGS_RX_PEER_METADATA_VERSION_EXTENSION_SET(target_cap_flags, value) \
+    WMI_SET_BITS(target_cap_flags, 26, 3, value)
 
 /*
  * wmi_htt_msdu_idx_to_htt_msdu_qtype GET/SET APIs
@@ -3976,7 +3980,8 @@ typedef struct {
      * Bits 19:17 - max number of ML STA BSS supported, range [0-7]
      * Bits 22:20 - max number of ML SAP BSS supported, range [0-7]
      * Bits 25:23 - total number of ML links supported, range [0-7]
-     * Bits 31:26 - Reserved
+     * Bits 28:27 - extended rx peer metadata version capabilities
+     * Bits 31:29 - Reserved
      */
     A_UINT32 target_cap_flags;
 
@@ -5092,8 +5097,11 @@ typedef struct {
      *      1 -> enable the feature
      *     Refer to below WMI_RSRC_CFG_FLAGS2_RECV_BCN_STATS_ENABLED_GET/SET
      *     macros.
+     *  Bits 28:26 - extension bits for specifing the format version of the
+     *     rx peer metadata the target needs to use (to cover versions V2 and
+     *     beyond).
      *
-     *  Bits 31:26 - Reserved
+     *  Bits 31:29 - Reserved
      */
     A_UINT32 flags2;
     /** @brief host_service_flags - can be used by Host to indicate
@@ -5732,6 +5740,10 @@ typedef struct {
 #define WMI_RSRC_CFG_FLAGS2_RECV_BCN_STATS_ENABLED_SET(flags2, value) \
     WMI_SET_BITS(flags2, 25, 1, value)
 
+#define WMI_RSRC_CFG_FLAGS2_RX_PEER_METADATA_EXTENSION_GET(flags2) \
+    WMI_GET_BITS(flags2, 26, 3)
+#define WMI_RSRC_CFG_FLAGS2_RX_PEER_METADATA_EXTENSION_SET(flags2, value) \
+    WMI_SET_BITS(flags2, 26, 3, value)
 
 #define WMI_RSRC_CFG_HOST_SERVICE_FLAG_NAN_IFACE_SUPPORT_GET(host_service_flags) \
     WMI_GET_BITS(host_service_flags, 0, 1)
@@ -15892,6 +15904,11 @@ typedef struct {
      * (end of packet)
      */
     A_UINT32 rx_other_11ax_msdu_cnt;
+    /* pending_mpdu_msdus:
+     * count of the pending MPDUs + MSDUs for all TIDs within all peers
+     * for all the vdev under the specified pdev
+     */
+    A_UINT32 pending_mpdu_msdus;
 } wmi_pdev_extd_stats;
 
 /**
@@ -16056,11 +16073,6 @@ typedef struct {
      * Includes rx_time but not tx_time.
      */
     A_UINT32 cca_time;
-    /* pending_mpdu_msdus:
-     * count of the pending mpdu + msdus for all tids within all peers
-     * for the specified vdev
-     */
-    A_UINT32 pending_mpdu_msdus;
 } wmi_vdev_extd_stats;
 
 /**
@@ -20136,6 +20148,20 @@ typedef enum {
     /* Use BTWT ID0 for this vdev */
     WMI_VDEV_PARAM_USE_BTWT_ID0,                          /* 0xD0 */
 
+    /*
+     * Enable or disable UHR ELR capability in Auto rate and
+     * Fixed rate UHR data packet transmissions.
+     * Enable or disable Enhanced Long range
+     * valid values: 0 - Disable ELR, 1 - Enable ELR.
+     */
+    WMI_VDEV_PARAM_UHR_ELR,                               /* 0xD1 */
+
+    /*
+     * Enable or disable Non-data UHR Enhanced Long Range
+     * valid values: 0 - Disable ELR, 1 - Enable ELR.
+     */
+    WMI_VDEV_PARAM_NON_DATA_UHR_ELR,                      /* 0xD2 */
+
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
      * The below vdev param types are used for prototyping, and are
@@ -23055,7 +23081,7 @@ typedef struct {
  *     wmi_peer_assoc_operating_mode_params <-- operating mode param that
  *         host sends to AP in peer assoc req, optional TLV
  * --- the below only apply to WMI_PEER_ASSOC_V2_CMD, not WMI_PEER_ASSOC_CMDID
- *     wmi_peer_npca_cap_params peer_npca_cap_params[]; <-- peer NPCA
+ *     wmi_peer_uhr_npca_cap_params peer_npca_cap_params[]; <-- peer NPCA
  *         capabilities, host sends NPCA peer capabilities as an optional TLV
  *     wmi_peer_create_mlo_params mlo_params[]; <-- MLO flags on peer_create
  *         Optional TLV, only present for MLO peers.
@@ -23079,55 +23105,50 @@ typedef struct {
 #define WMI_PEER_ASSOC_COMPLETE_CMD_FLAG_PEER_CCK_TX_SUPPORT_5GHZ_SET(flags, value) WMI_SET_BITS(flags, 3, 1, value)
 
 typedef struct {
-    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_peer_npca_cap_params*/
+    A_UINT32 tlv_header;
     A_UINT32 sw_peer_id;
     /*
      * flags
-     * Bit0    :   NPCA Enabled/Disabled
-     *             WMI_NPCA_AP_CAP_ENABLED_GET / WMI_NPCA_AP_CAP_ENABLED_SET
+     * Bit 0    :   NPCA Cap supported/Not supported
+     *              WMI_NPCA_PEER_CAP_SUPPORTED_GET / _SET
      *
-     * Bit1-3  :   NPCA Types
-     *             0:   Type1 - Two STF detectors
-     *             1:   Type2 - One STF detector
-     *             2-7: reserved for future purpose
-     *             WMI_NPCA_AP_CAP_TYPE_GET / WMI_NPCA_AP_CAP_TYPE_SET
+     * Bit 1    :   NPCA Enabled / Disabled
+     *              WMI_NPCA_PEER_CAP_ENABLED_GET / _SET
      *
-     * Bit4-9  :   NPCA Switch Delay
-     *             The time needed by an NPCA STA to switch from the
-     *             BSS primary channel to the NPCA primary channel,
-     *             in units of 4 us.
-     *             WMI_NPCA_AP_CAP_SWT_DELAY_GET / _SET
+     * Bit 2-7  :   NPCA Switch Delay
+     *              The time needed by an NPCA STA to switch from the
+     *              BSS primary channel to the NPCA primary channel,
+     *              in units of 4 us.
+     *              WMI_NPCA_PEER_CAP_SWT_DELAY_GET / _SET
      *
-     * Bit10:15:   NPCA Switch Back Delay
-     *             The time needed by an NPCA STA to switch from the
-     *             NPCA primary channel to the BSS primary channel,
-     *             in units of 4 us.
-     *             WMI_NPCA_AP_CAP_SWTB_DELAY_GET / _SET
+     * Bit 8:13 :   NPCA Switch Back Delay
+     *              The time needed by an NPCA STA to switch from the
+     *              NPCA primary channel to the BSS primary channel,
+     *              in units of 4 us.
+     *              WMI_NPCA_PEER_CAP_SWTB_DELAY_GET / _SET
      *
-     * Bit16:31:   Reserved
-    */
+     * Bit 14:31:   Reserved
+     */
     A_UINT32 npca_cap;
-} wmi_peer_npca_cap_params;
+} wmi_peer_uhr_npca_cap_params;
 
-#define WMI_NPCA_PEER_CAP_ENABLED_GET(_var)          WMI_GET_BITS(_var, 0, 1)
-#define WMI_NPCA_PEER_CAP_ENABLED_SET(_var, _val)    WMI_SET_BITS(_var, 0, 1, _val)
-
-#define WMI_NPCA_PEER_CAP_TYPE_GET(_var)             WMI_GET_BITS(_var, 1, 3)
-#define WMI_NPCA_PEER_CAP_TYPE_SET(_var, _val)       WMI_SET_BITS(_var, 1, 3, _val)
-
-#define WMI_NPCA_PEER_CAP_SWT_DELAY_GET(_var)        WMI_GET_BITS(_var, 4, 6)
-#define WMI_NPCA_PEER_CAP_SWT_DELAY_SET(_var, _val)  WMI_SET_BITS(_var, 4, 6, _val)
-
-#define WMI_NPCA_PEER_CAP_SWTB_DELAY_GET(_var)       WMI_GET_BITS(_var, 10, 6)
-#define WMI_NPCA_PEER_CAP_SWTB_DELAY_SET(_var, _val) WMI_SET_BITS(_var, 10, 6, _val)
+#define WMI_NPCA_PEER_CAP_SUPPORTED_GET(_var)           WMI_GET_BITS(_var, 0, 1)
+#define WMI_NPCA_PEER_CAP_SUPPORTED_SET(_var, _val)     WMI_SET_BITS(_var, 0, 1, _val)
+#define WMI_NPCA_PEER_CAP_ENABLED_GET(_var)             WMI_GET_BITS(_var, 1, 1)
+#define WMI_NPCA_PEER_CAP_ENABLED_SET(_var, _val)       WMI_SET_BITS(_var, 1, 1, _val)
+#define WMI_NPCA_PEER_CAP_SWT_DELAY_GET(_var)           WMI_GET_BITS(_var, 2, 6)
+#define WMI_NPCA_PEER_CAP_SWT_DELAY_SET(_var, _val)     WMI_SET_BITS(_var, 2, 6, _val)
+#define WMI_NPCA_PEER_CAP_SWTB_DELAY_GET(_var)          WMI_GET_BITS(_var, 8, 6)
+#define WMI_NPCA_PEER_CAP_SWTB_DELAY_SET(_var, _val)    WMI_SET_BITS(_var, 8, 6, _val)
 
 typedef struct {
-    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_peer_npca_cap_cmd_fixed_params*/
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_peer_uhr_mode_update_cmd_fixed_params */
+    A_UINT32 pdev_id;
     /*
      *  Following this structure is the TLV:
-     * struct wmi_peer_npca_cap_params peer_npca_cap_params[num_peers];
+     * struct wmi_peer_uhr_npca_cap_params peer_npca_cap_params[num_peers];
      */
-} wmi_peer_npca_cap_cmd_fixed_param;
+} wmi_peer_uhr_mode_update_cmd_fixed_param;
 
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_get_ap_oper_bw_cmd_fixed_param */
@@ -28278,15 +28299,14 @@ typedef struct {
      *     1 - full bandwidth need put to NOL
      *     Refer to WMI_RADAR_FLAGS_FULL_BW_NOL_GET and _SET macros
      *
-     * Bits 1-7:
+     * Bits 1-16:
      *     RADAR TYPE field (currently reserved for future use)
      *     When implemented, this field will indicate the type of
-     *     radar detected.
-     *     The meaning of the different values of this radar type field
-     *     will be specified in the future.
+     *     radar detected, and also the domain.
+     *     For example, a value of 0x4001 means domain = 4 and radar type = 1.
      *     Refer to WMI_RADAR_FLAGS_RADAR_TYPE_GET and _SET macros.
      *
-     * Bits 8-15:
+     * Bits 17-24:
      *     RADAR RSSI in dBm in the range of -128 to +127.
      *     This 8-bit value is interpreted as a twos-complement signed number
      *     (so for example, 0x80 = -128, 0x0 = 0, and 0x7f = 127).
@@ -28294,7 +28314,7 @@ typedef struct {
      *     WMI_SERVICE_RADAR_FLAGS_RSSI_DBM_SUPPORT
      *     wmi service flag is set.
      *
-     * [16:31] reserved
+     * [25:31] reserved
      */
     A_UINT32 flags;
 }  WMI_RADAR_FLAGS;
@@ -28303,9 +28323,9 @@ typedef struct {
 #define WMI_RADAR_FLAGS_FULL_BW_NOL_NUM_BITS  1
 
 #define WMI_RADAR_FLAGS_RADAR_TYPE_BITPOS     1
-#define WMI_RADAR_FLAGS_RADAR_TYPE_NUM_BITS   7
+#define WMI_RADAR_FLAGS_RADAR_TYPE_NUM_BITS   16
 
-#define WMI_RADAR_FLAGS_RSSI_DBM_BITPOS       8
+#define WMI_RADAR_FLAGS_RSSI_DBM_BITPOS       17
 #define WMI_RADAR_FLAGS_RSSI_DBM_NUM_BITS     8
 
 #define WMI_RADAR_FLAGS_FULL_BW_NOL_GET(flag) \
@@ -28334,6 +28354,157 @@ typedef struct {
     WMI_SET_BITS(flag, \
         WMI_RADAR_FLAGS_RSSI_DBM_BITPOS, \
         WMI_RADAR_FLAGS_RSSI_DBM_NUM_BITS, val)
+
+/* Bitfield layout constants */
+#define WMI_RADAR_DOMAIN_SHIFT 12
+#define WMI_RADAR_DOMAIN_MASK  0xF000
+#define WMI_RADAR_TYPE_MASK    0x0FFF
+
+/* Helper Macros */
+#define WMI_MAKE_RADAR_TYPE(domain, type) \
+    (((domain) << WMI_RADAR_DOMAIN_SHIFT) | ((type) & WMI_RADAR_TYPE_MASK))
+
+#define WMI_GET_RADAR_DOMAIN(radar_type) \
+    (((radar_type) & WMI_RADAR_DOMAIN_MASK) >> WMI_RADAR_DOMAIN_SHIFT)
+
+#define WMI_GET_RADAR_TYPE(radar_type) \
+    ((radar_type) & WMI_RADAR_TYPE_MASK)
+
+#define WMI_IS_RADAR_DOMAIN(radar_type, domain) \
+    (GET_RADAR_DOMAIN(radar_type) == (domain))
+
+/* Regulatory Domain Codes (4 bits = 0-15) */
+#define WMI_RADAR_DOMAIN_FCC        0x0    /* United States */
+#define WMI_RADAR_DOMAIN_ETSI_301   0x1    /* Europe EN 301 893 */
+#define WMI_RADAR_DOMAIN_ETSI_302   0x2    /* Europe EN 302 502 */
+#define WMI_RADAR_DOMAIN_CHINA      0x3    /* China */
+#define WMI_RADAR_DOMAIN_KOREA      0x4    /* Korea */
+#define WMI_RADAR_DOMAIN_JAPAN_W53  0x5    /* Japan W53 band */
+#define WMI_RADAR_DOMAIN_JAPAN_W56  0x6    /* Japan W56 band */
+#define WMI_RADAR_DOMAIN_JAPAN_W564 0x7    /* Japan W56.4 band */
+#define WMI_RADAR_DOMAIN_UNDEFINED  0xF    /* Undefined/Unknown */
+/* Reserved for future use: 0x8-0xE */
+
+/* Radar Type Codes within each domain (12 bits = 0-4095) */
+/* ===== FCC (United States) Radar Types ===== */
+#define WMI_DFS_RADAR_FCC_TYPE_0 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x001)
+#define WMI_DFS_RADAR_FCC_TYPE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x002)
+#define WMI_DFS_RADAR_FCC_TYPE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x004)
+#define WMI_DFS_RADAR_FCC_TYPE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x008)
+#define WMI_DFS_RADAR_FCC_TYPE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x010)
+#define WMI_DFS_RADAR_FCC_TYPE_5 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x020)
+#define WMI_DFS_RADAR_FCC_TYPE_6 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x040)
+
+/* ===== ETSI EN 301 893 Radar Types ===== */
+#define WMI_DFS_RADAR_ETSI301_TYPE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x001)
+#define WMI_DFS_RADAR_ETSI301_TYPE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x002)
+#define WMI_DFS_RADAR_ETSI301_TYPE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x004)
+#define WMI_DFS_RADAR_ETSI301_TYPE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x008)
+#define WMI_DFS_RADAR_ETSI301_TYPE_52 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x010)
+#define WMI_DFS_RADAR_ETSI301_TYPE_62 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x020)
+#define WMI_DFS_RADAR_ETSI301_TYPE_1_2 \
+    /* Combined Type 1+2 */ \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x003)
+#define WMI_DFS_RADAR_ETSI301_TYPE_1_2_6  \
+    /* Combined Type 1+2+6 */ \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x023)
+
+/* ===== ETSI EN 302 502 Radar Types ===== */
+#define WMI_DFS_RADAR_ETSI302_TYPE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x001)
+#define WMI_DFS_RADAR_ETSI302_TYPE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x002)
+#define WMI_DFS_RADAR_ETSI302_TYPE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x004)
+#define WMI_DFS_RADAR_ETSI302_TYPE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x008)
+#define WMI_DFS_RADAR_ETSI302_TYPE_5 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x010)
+#define WMI_DFS_RADAR_ETSI302_TYPE_6 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x020)
+#define WMI_DFS_RADAR_ETSI302_TYPE_1_2 \
+    /* Combined Type 1+2 */ \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x003)
+
+/* ===== China Radar Types ===== */
+#define WMI_DFS_RADAR_CHN_TYPE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x001)
+#define WMI_DFS_RADAR_CHN_TYPE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x002)
+#define WMI_DFS_RADAR_CHN_TYPE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x004)
+#define WMI_DFS_RADAR_CHN_TYPE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x008)
+#define WMI_DFS_RADAR_CHN_TYPE_5 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x010)
+#define WMI_DFS_RADAR_CHN_TYPE_6 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x020)
+#define WMI_DFS_RADAR_CHN_TYPE_1_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x003) /* Combined Type 1+2 */
+#define WMI_DFS_RADAR_CHN_TYPE_1_2_6 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x023) /* Combined Type 1+2+6 */
+#define WMI_DFS_RADAR_CHN_TYPE_3_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x00C) /* Combined Type 3+4 */
+
+/* ===== Korea Radar Types ===== */
+#define WMI_DFS_RADAR_KOR_TYPE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_KOREA, 0x001)
+#define WMI_DFS_RADAR_KOR_TYPE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_KOREA, 0x002)
+#define WMI_DFS_RADAR_KOR_TYPE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_KOREA, 0x004)
+#define WMI_DFS_RADAR_KOR_TYPE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_KOREA, 0x008)
+
+/* ===== Japan W53 Band Radar Types ===== */
+#define WMI_DFS_RADAR_JAP_W53_FIXED_PULSE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W53, 0x001)
+#define WMI_DFS_RADAR_JAP_W53_FIXED_PULSE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W53, 0x002)
+#define WMI_DFS_RADAR_JAP_W53_VAR_PULSE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W53, 0x004)
+#define WMI_DFS_RADAR_JAP_W53_VAR_PULSE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W53, 0x008)
+
+/* ===== Japan W56 Band Radar Types ===== */
+#define WMI_DFS_RADAR_JAP_W56_FIXED_PULSE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x001)
+#define WMI_DFS_RADAR_JAP_W56_FIXED_PULSE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x002)
+#define WMI_DFS_RADAR_JAP_W56_FIXED_PULSE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x004)
+#define WMI_DFS_RADAR_JAP_W56_VAR_PULSE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x008)
+#define WMI_DFS_RADAR_JAP_W56_VAR_PULSE_5 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x010)
+#define WMI_DFS_RADAR_JAP_W56_VAR_PULSE_6 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x020)
+#define WMI_DFS_RADAR_JAP_W56_CHIRP \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x040)
+#define WMI_DFS_RADAR_JAP_W56_FIXED_PULSE_1_2 \
+    /* Combined Type 1+2 */ \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x003)
+
+/* ===== Japan W56.4 Band Radar Types ===== */
+#define WMI_DFS_RADAR_JAP_W564_HOPPING \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W564, 0x001)
+
+/* ===== Undefined/Unknown ===== */
+#define WMI_DFS_RADAR_TYPE_UNDEF \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_UNDEFINED, 0xFFF)
 
 
 typedef enum {
@@ -31871,6 +32042,12 @@ typedef struct {
      */
     wmi_mac_addr smd_identifier;
     /**
+     * Length of KDE data which is received on EAPOL M3 frame or
+     * reassoc reponse frame.
+     * Ex: SAE PW ID KDE data
+     */
+    A_UINT32 kde_length;
+    /**
      * TLV (tag length value) parameters follows roam_synch_event
      * The TLV's are:
      *     A_UINT8 bcn_probe_rsp_frame[bcn_probe_resp_len];
@@ -31888,6 +32065,7 @@ typedef struct {
      *     wmi_key_material_ext key_ext[];
      *     wmi_roam_pmk_cache_synch_tlv_param roam_pmk_cache_synch_info[];
      *     wmi_pdev_band_to_mac mac_freq_mapping[];
+     *     A_UINT8 kde_data[];
      */
 } wmi_roam_synch_event_fixed_param;
 
@@ -33869,16 +34047,28 @@ typedef struct {
     A_UINT32 vdev_id;
 } wmi_vdev_unified_disconnect_cmd_fixed_param;
 
+typedef enum {
+    WMI_VDEV_UNIFIED_CONNECT_EVENT_SUCCESS,
+    WMI_VDEV_UNIFIED_CONNECT_EVENT_FAILURE,
+} WMI_VDEV_UNIFIED_CONNECT_EVENT_STATUS;
+
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_unified_connect_event_fixed_param */
     /** unique id identifying the VDEV, generated by the caller */
     A_UINT32 vdev_id;
+    A_UINT32 status; /* WMI_VDEV_UNIFIED_CONNECT_EVENT_STATUS */
 } wmi_vdev_unified_connect_event_fixed_param;
+
+typedef enum {
+    WMI_VDEV_UNIFIED_DISCONNECT_EVENT_SUCCESS,
+    WMI_VDEV_UNIFIED_DISCONNECT_EVENT_FAILURE,
+} WMI_VDEV_UNIFIED_DISCONNECT_EVENT_STATUS;
 
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_unified_disconnect_event_fixed_param */
     /** unique id identifying the VDEV, generated by the caller */
     A_UINT32 vdev_id;
+    A_UINT32 status; /* WMI_VDEV_UNIFIED_DISCONNECT_EVENT_STATUS */
 } wmi_vdev_unified_disconnect_event_fixed_param;
 
 
@@ -41204,6 +41394,8 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_PDEV_POWER_DATAPATH_STATS_CMDID);
         WMI_RETURN_STRING(WMI_SMD_ROAM_CONFIG_CMDID);
         WMI_RETURN_STRING(WMI_SMD_ROAM_PEER_UNIFIED_SETUP_CMDID);
+        WMI_RETURN_STRING(WMI_VDEV_UNIFIED_CONNECT_CMDID);
+        WMI_RETURN_STRING(WMI_VDEV_UNIFIED_DISCONNECT_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
@@ -53067,6 +53259,8 @@ typedef enum {
 typedef enum {
     WMI_PDEV_POWER_BOOST_TS_FIRST_PASS = 0,
     WMI_PDEV_POWER_BOOST_TS_SECOND_PASS,
+    WMI_PDEV_POWER_BOOST_TS_THIRD_PASS,
+    WMI_PDEV_POWER_BOOST_TS_FOURTH_PASS,
 
     WMI_PDEV_POWER_BOOST_TS_MAX
 } wmi_pdev_power_boost_training_stage;
@@ -53986,6 +54180,95 @@ typedef struct {
 #define WMI_UHR_AP_ELR_RECEPTION_PARAMS_UPDATE_GET(_var)       WMI_GET_BITS(_var, 1, 1)
 #define WMI_UHR_AP_ELR_RECEPTION_PARAMS_UPDATE_SET(_var, _val) WMI_SET_BITS(_var, 1, 1, _val)
 
+
+/* ---------------- Mode bit positions ---------------- */
+typedef enum {
+    WMI_UHR_AP_MODE_TUP_DPS    = 0,
+    WMI_UHR_AP_MODE_TUP_NPCA   = 1,
+    WMI_UHR_AP_MODE_TUP_DUO    = 2,
+    WMI_UHR_AP_MODE_TUP_PEDCA  = 3,
+    WMI_UHR_AP_MODE_TUP_DBE    = 4,
+    WMI_UHR_AP_MODE_TUP_PUO    = 5,
+    WMI_UHR_AP_MODE_TUP_ELR    = 6,
+    /* Future modes -> 6..23 */
+    WMI_UHR_MAX_MODES = 24
+} WMI_UHR_AP_MODE_TUP;
+
+typedef enum{
+    WMI_UHR_AP_MODE_TUP_STATE_DISABLE   = 0,
+    WMI_UHR_AP_MODE_TUP_STATE_ENABLE    = 1,
+    WMI_UHR_AP_MODE_TUP_STATE_UPDATE    = 2,
+    WMI_UHR_AP_MODE_TUP_STATE_RESERVED  = 3,
+    WMI_UHR_AP_MODE_TUP_STATE_MAX       = 4
+} WMI_UHR_AP_MODE_TUP_STATE;
+
+#define WMI_UHR_AP_VDEV_ID_GET(var)             WMI_GET_BITS(var, 0, 8)
+#define WMI_UHR_AP_VDEV_ID_SET(var, val)        WMI_SET_BITS(var, 0, 8, val)
+
+
+#define WMI_UHR_AP_MODE_TUP_DPS_GET(var)        WMI_GET_BITS(var, 8, 2)
+#define WMI_UHR_AP_MODE_TUP_DPS_SET(var, val)   WMI_SET_BITS(var, 8, 2, val)
+
+#define WMI_UHR_AP_MODE_TUP_NPCA_GET(var)       WMI_GET_BITS(var, 10, 2)
+#define WMI_UHR_AP_MODE_TUP_NPCA_SET(var, val)  WMI_SET_BITS(var, 10, 2, val)
+
+#define WMI_UHR_AP_MODE_TUP_DUO_GET(var)        WMI_GET_BITS(var, 12, 2)
+#define WMI_UHR_AP_MODE_TUP_DUO_SET(var, val)   WMI_SET_BITS(var, 12, 2, val)
+
+#define WMI_UHR_AP_MODE_TUP_PEDCA_GET(var)      WMI_GET_BITS(var, 14, 2)
+#define WMI_UHR_AP_MODE_TUP_PEDCA_SET(var, val) WMI_SET_BITS(var, 14, 2, val)
+
+#define WMI_UHR_AP_MODE_TUP_DBE_GET(var)        WMI_GET_BITS(var, 16, 2)
+#define WMI_UHR_AP_MODE_TUP_DBE_SET(var, val)   WMI_SET_BITS(var, 16, 2, val)
+
+#define WMI_UHR_AP_MODE_TUP_PUO_GET(var)        WMI_GET_BITS(var, 18, 2)
+#define WMI_UHR_AP_MODE_TUP_PUO_SET(var, val)   WMI_SET_BITS(var, 18, 2, val)
+
+#define WMI_UHR_AP_MODE_TUP_ELR_GET(var)        WMI_GET_BITS(var, 20, 2)
+#define WMI_UHR_AP_MODE_TUP_ELR_SET(var, val)   WMI_SET_BITS(var, 20, 2, val)
+
+typedef struct {
+    /** TLV tag and len; tag equals
+     * WMITLV_TAG_STRUC_wmi_uhr_ap_mode_tuple_enable_disable_update_params */
+    A_UINT32 tlv_header;
+    /*
+     * WMI_UHR_AP_MODE_TUP_DPS_GET/_NPCA/DBE/DUO/PUO/ELR/PEDCA
+     * Modes are defined in WMI_UHR_AP_MODE_TUP
+     * WMI_UHR_AP_MODE_TUP_DPS_SET/
+     * similarly for DBE/DPS/DUO/PUO/ELR/PEDCA
+     */
+    union{
+        /*
+         * Bits 0:7   - vdev_id (8 bits)
+         * Bits 8:31  - mode enable/disable/update bitmap
+         *              (24 bits, using 2 bits for each mode)
+         *     WMI_UHR_AP_MODE_TUP_STATE
+         *     WMI_UHR_MAX_MODES
+         *     Bits 8:9      DPS
+         *     Bits 10:11    NPCA
+         *     Bits 12:13    DUO
+         *     Bits 14:15    PEDCA
+         *     Bits 16:17    DBE
+         *     Bits 18:19    PUO
+         *     Bits 20:21    ELR
+         *     Bits 22:31    reserved
+         */
+        A_UINT32 vdev_id_mode_tuple_enable_disable_update_bits;
+        struct{
+            A_UINT32 vdev_id:8,
+                     mode_tup_dps_enable_disable_update_bits:   2,
+                     mode_tup_npca_enable_disable_update_bits:  2,
+                     mode_tup_duo_enable_disable_update_bits:   2,
+                     mode_tup_pedca_enable_disable_update_bits: 2,
+                     mode_tup_dbe_enable_disable_update_bits:   2,
+                     mode_tup_puo_enable_disable_update_bits:   2,
+                     mode_tup_elr_enable_disable_update_bits:   2,
+                     reserved:10;
+        };
+    };
+    /* Add any new required fields below */
+} wmi_uhr_ap_mode_tuple_enable_disable_update_params;
+
 typedef struct {
     /** TLV tag and len; tag equals
      * WMITLV_TAG_STRUC_wmi_vdev_uhr_cu_cmd_fixed_param */
@@ -53999,6 +54282,7 @@ typedef struct {
      *   - wmi_uhr_ap_dbe_params
      *   - wmi_uhr_ap_ap_puo_params
      *   - wmi_uhr_ap_elr_reception_params
+     *   - wmi_uhr_ap_mode_tuple_enable_disable_update_params[]
      */
 } wmi_vdev_uhr_cu_cmd_fixed_param;
 
@@ -54006,6 +54290,7 @@ typedef struct {
     /** TLV tag and len; tag equals
      * WMITLV_TAG_STRUC_wmi_pdev_uhr_cu_cmd_fixed_param */
     A_UINT32 tlv_header;
+    A_UINT32 pdev_id;
     /* This fixed param TLV will be followed by the below TLVs
      *   - wmi_uhr_ap_dps_params[]
      *   - wmi_uhr_ap_npca_params[]
@@ -54014,6 +54299,7 @@ typedef struct {
      *   - wmi_uhr_ap_dbe_params[]
      *   - wmi_uhr_ap_ap_puo_params[]
      *   - wmi_uhr_ap_elr_reception_params[]
+     *   - wmi_uhr_ap_mode_tuple_enable_disable_update_params[]
      */
 } wmi_pdev_uhr_cu_cmd_fixed_param;
 
