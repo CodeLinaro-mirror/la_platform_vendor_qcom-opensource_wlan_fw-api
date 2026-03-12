@@ -738,6 +738,32 @@ typedef  enum  {
 
     WMI_SERVICE_CCK_RX_SUPPORT_5GHZ = 475, /* Indicates FW supports CCK RX in 5 GHz band */
     WMI_SERVICE_CCK_TX_SUPPORT_5GHZ = 476, /* Indicates FW supports CCK TX in 5 GHZ band */
+    WMI_SERVICE_DIRECT_REFILL_SUPPORT = 477, /* Indicates FW supports direct refill for RX buffer ring */
+    WMI_SERVICE_NAN_STANDARD_MODE_SUPPORT = 478, /* Indicates FW supports NAN in standard mode (supplicant-based NAN architecture model) */
+    WMI_SERVICE_CONC_2VDEV_DCS_STATS_SUPPORT = 479, /* Indicate FW support for collecting DCS stats for more than 1 vdev (max 2 concurrent vdevs) */
+    WMI_SERVICE_CFR_UNASSOC_RX_CAPTURE_SUPPORT = 480, /* Indicates FW supports RX-based unassociated CFR capture */
+    WMI_SERVICE_CFR_ASSOC_TX_CAPTURE_SUPPORT = 481, /* Indicates FW supports TX-based CFR capture */
+    WMI_SERVICE_VDEV_UNIFIED_CONNECT_DISCONNECT_SUPPORT = 482, /* Indicates FW support for unified connect and disconnect vdev cmds for link switch */
+    WMI_SERVICE_ENHANCED_STATS_SUPPORT = 483, /* Indicates FW supports "enhanced stats" */
+    WMI_SERVICE_RADAR_FLAGS_RSSI_DBM_SUPPORT = 484, /* Indicates FW support to add RSSI in dBm units in WMI radar event */
+    WMI_SERVICE_WOW_STA_PS_PARAM_CACHE_SUPPORT = 485,  /* Indicates FW support for WOW timeline optimization feature */
+    WMI_SERVICE_VENDOR_OUI_SUPPORT_EXCLUSIVE_MAC_ADDRESS = 486, /* FW supports parse exclusive_mac_address in wmi_vendor_oui_ext */
+    WMI_SERVICE_P2P_CANCEL_ONE_SHOT_NOA_SUPPORT = 487, /* Indicates FW support for P2P GO/GC cancel one-shot NOA feature */
+    WMI_SERVICE_SMD_BSS_TRANSITION_SUPPORT = 488, /* Indicates FW supports S(eamless)M(obility)D(omain) BSS transition */
+
+    /* Service caps related to SMD Roaming - start */
+    WMI_SERVICE_SMD_SUPPORT_ROAMING = 489,
+    WMI_SERVICE_SMD_SUPPORT_DL_FORWARD = 490,
+    WMI_SERVICE_SMD_SUPPORT_UL_FORWARD = 491,
+    /* Service caps related to SMD Roaming - end */
+
+    WMI_SERVICE_PEER_METADATA_V2_SUPPORT = 492, /* Support rx peer meta data v2 */
+    /* WMI_SERVICE_HANDLE_ROAMING_WITHOUT_RSO_STOP_FOR_4WAY_HS_OFFLOAD_DISABLE:
+     * Indicates support to handle roaming triggers while host is doing
+     * the EAPOL process for 4way HS offload disable case.
+     * FW needs to disable the roam triggers except deauth roaming.
+     */
+    WMI_SERVICE_HANDLE_ROAMING_WITHOUT_RSO_STOP_FOR_4WAY_HS_OFFLOAD_DISABLE = 493,
 
 
     WMI_MAX_EXT2_SERVICE
