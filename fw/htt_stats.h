@@ -1154,6 +1154,9 @@ typedef enum {
 #define HTT_PDEV_STATS_MAX_SEQ_CTRL_HIST 4
 /* For BE max active seq_ctrl that can be in HWQ */
 #define HTT_PDEV_STATS_MAX_ACTIVE_SEQ_IN_HWQ_HIST 2
+#define HTT_PDEV_STATS_TXOP_DUR_HIST_BINS 12
+#define HTT_PDEV_STATS_TXOP_DUR_HIST_INTERVAL_US 1000
+#define HTT_PDEV_STATS_MAX_DATA_TID_COUNT 8
 
 typedef enum {
     HTT_STATS_TX_PDEV_NO_DATA_UNDERRUN = 0,
@@ -1396,6 +1399,8 @@ typedef struct {
     A_UINT32 hw_reaped_sp;
     /** Number of hardware reaped (Tx completed) packets in VLP mode */
     A_UINT32 hw_reaped_vlp;
+    A_UINT32 avg_channel_access_latency_per_ac[HTT_NUM_AC_WMM]; /* usec units */
+    A_UINT32 seq_posted_per_tid[HTT_PDEV_STATS_MAX_DATA_TID_COUNT];
 } htt_stats_tx_pdev_cmn_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_pdev_cmn_tlv htt_tx_pdev_stats_cmn_tlv;
@@ -5410,6 +5415,60 @@ typedef struct {
 typedef htt_stats_sched_txq_supercycle_trigger_tlv
     htt_sched_txq_supercycle_triggers_tlv_v;
 
+/* htt_tx_pdev_txq_stats_upload_t
+ * Enumerations for specifying which stats to upload in response to
+ * HTT_DBG_PDEV_TXQ_STATS.
+ */
+typedef enum {
+    /* upload all data TXQ stats */
+    HTT_UPLOAD_DATA_TXQ_STATS,
+    /* upload MGMT/TWT TXQ stats */
+    HTT_UPLOAD_MGMT_TWT_TXQ_STATS,
+} htt_tx_pdev_txq_stats_upload_t;
+
+typedef enum {
+    /* Sequence combine successful */
+    HTT_SCHED_COMBINED_SEQ_STATUS_SUCCESS = 0,
+
+    /* Seq combine abort due to no prev sequence */
+    HTT_SCHED_COMBINED_SEQ_STATUS_NO_ACTIVE_PREV_SEQ,
+
+    /* Seq combine abort due to back to back allow flag set */
+    HTT_SCHED_COMBINED_SEQ_STATUS_B2B_ALLOW_FLAG,
+
+    /* combining will be disabled if sounding sequence is to be combined */
+    HTT_SCHED_COMBINED_SEQ_STATUS_SOUNDING_SEQ_ABORT,
+
+    /* Seq combine abort due to seq not constructed */
+    HTT_SCHED_COMBINED_SEQ_STATUS_SEQ_NOT_CONSTRUCTED,
+
+    /* Seq combine abort and subring change */
+    HTT_SCHED_COMBINED_SEQ_STATUS_HW_PAUSED_SEQ_CONSRUCTED,
+
+    /* Seq combine abort and indicate TAC */
+    HTT_SCHED_COMBINED_SEQ_STATUS_HW_PAUSED_SEQ_NOT_CONSTRUCTED,
+
+    /* Seq combine abort and seq restart */
+    HTT_SCHED_COMBINED_SEQ_STATUS_HW_PAUSED_SEQ_POSTED,
+
+    HTT_SCHED_COMBINED_SEQ_STATUS_MAX
+} htt_sched_txq_combined_seq_status_tlv_enum;
+
+#define HTT_SCHED_TXQ_COMBINED_SEQ_STATE_TLV_SZ(_num_elems) (sizeof(A_UINT32) * (_num_elems))
+
+/* NOTE: Variable length TLV, use length spec to infer array size */
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    /**
+     * combined_seq_state counts the number of occurrences of different
+     * reasons for aborting combining two different sequence in TAC
+     * during posting
+     *
+     * Indexed by htt_sched_txq_combined_seq_status_tlv_enum.
+     */
+    HTT_STATS_VAR_LEN_ARRAY1(A_UINT32, combined_seq_state);
+} htt_stats_sched_txq_combined_seq_state_tlv;
+
 typedef struct {
     htt_tlv_hdr_t tlv_hdr;
     union {
@@ -5629,6 +5688,7 @@ typedef struct {
         htt_stats_sched_txq_supercycle_trigger_tlv
             htt_sched_txq_sched_ineligibility_tlv_esched_supercycle_trigger_tlv;
         htt_stats_sched_txq_early_compl_tlv         early_compl_tlv;
+        htt_stats_sched_txq_combined_seq_state_tlv  combined_seq_state_tlv;
     } txq[1];
 } htt_stats_tx_sched_t;
 #endif
@@ -7287,6 +7347,17 @@ typedef struct {
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_pdev_ppdu_dur_tlv htt_tx_pdev_ppdu_dur_stats_tlv;
 
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    /** tx_txop_dur_hist:
+     * Tx txop duration histogram, which holds the total txop used
+     * under histogram bins of interval 1ms
+     */
+     A_UINT32 tx_su_mdsb_txop_dur_hist[HTT_PDEV_STATS_TXOP_DUR_HIST_BINS];
+     A_UINT32 tx_ofdma_txop_dur_hist[HTT_PDEV_STATS_TXOP_DUR_HIST_BINS];
+     A_UINT32 tx_mimo_txop_dur_hist[HTT_PDEV_STATS_TXOP_DUR_HIST_BINS];
+     A_UINT32 combined_sched_cmd_txop_dur_hist[HTT_PDEV_STATS_TXOP_DUR_HIST_BINS];
+} htt_stats_tx_pdev_txop_dur_tlv;
 
 #define HTT_TX_PDEV_BN_RATE_STATS_MAC_ID_M 0x000000ff
 #define HTT_TX_PDEV_BN_RATE_STATS_MAC_ID_S 0
@@ -7334,6 +7405,8 @@ typedef struct {
     A_UINT32 tx_mcs_ext_3[HTT_TX_PDEV_STATS_NUM_EXTRA3_MCS_COUNTERS];
     A_UINT32 tx_gi_ext_3[HTT_TX_PDEV_STATS_NUM_GI_COUNTERS][HTT_TX_PDEV_STATS_NUM_EXTRA3_MCS_COUNTERS];
     A_UINT32 tx_stbc_ext_3[HTT_TX_PDEV_STATS_NUM_EXTRA3_MCS_COUNTERS];
+    /* Stats for UHR ELR */
+    A_UINT32 tx_11bn_su_elr;
 } htt_stats_tx_pdev_bn_rate_tlv;
 
 
@@ -7352,6 +7425,7 @@ typedef struct {
     htt_stats_tx_pdev_be_rate_stats_tlv rate_be_tlv;
     htt_stats_tx_pdev_sawf_rate_stats_tlv rate_sawf_tlv;
     htt_stats_tx_pdev_ppdu_dur_tlv tx_ppdu_dur_tlv;
+    htt_stats_tx_pdev_txop_dur_tlv tx_txop_dur_tlv;
 } htt_tx_pdev_rate_stats_t;
 #endif /* ATH_TARGET */
 
@@ -7605,6 +7679,7 @@ typedef struct {
 
     /* Stats for MCS 12/13 */
     A_UINT32 rx_mcs_ext[HTT_RX_PDEV_STATS_NUM_EXTRA_MCS_COUNTERS];
+    A_UINT32 rx_11bn_su_elr;
 /*
  * NOTE - this TLV is already large enough that it causes the HTT message
  * carrying it to be nearly at the message size limit that applies to
@@ -7757,6 +7832,8 @@ typedef struct {
 
 #define HTT_RX_UL_MAX_UPLINK_RSSI_TRACK 5
 
+#define HTT_STATS_MAX_NUM_TCP_IMPLICIT_TRIG_INTR 12
+
 typedef struct {
     htt_tlv_hdr_t tlv_hdr;
 
@@ -7820,6 +7897,20 @@ typedef struct {
      * response to basic trigger. Typically a data response is expected.
      */
     A_UINT32 ul_ofdma_basic_trigger_rx_qos_null_only;
+
+    /* tcp_aware_implicit_trig_hist_ms:
+     * Each histogram bin represents a 3 ms range:
+     * tcp_aware_implicit_trig_hist_ms[0] -> 0-3 ms,
+     * tcp_aware_implicit_trig_hist_ms[1] -> 3-6 ms,
+     * etc.
+     */
+    A_UINT32 tcp_aware_implicit_trig_hist_ms[HTT_STATS_MAX_NUM_TCP_IMPLICIT_TRIG_INTR];
+
+    A_UINT32 ulofdma_implicit_trig_tried;
+    A_UINT32 ulofdma_implicit_trig_qos_null;
+
+    /* Txop duration history from 0 to 12 ms with interval of 1000us */
+    A_UINT32 ul_ofdma_txop_dur_hist[HTT_PDEV_STATS_TXOP_DUR_HIST_BINS];
 } htt_stats_rx_pdev_ul_trig_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_rx_pdev_ul_trig_stats_tlv htt_rx_pdev_ul_trigger_stats_tlv;
@@ -7955,6 +8046,11 @@ typedef struct {
     A_UINT32 bn_ul_ofdma_rx_dru_sbw[HTT_BN_UL_OFDMA_NUM_DRU_SBW_COUNT];
     /* UL OFDMA DRU size of data PPDU */
     A_UINT32 bn_rx_ulofdma_data_dru_size_ppdu[HTT_TX_PDEV_STATS_NUM_BN_DRU_SIZE_COUNTERS];
+
+    A_UINT32 be_ulofdma_implicit_trig_tried;
+    A_UINT32 be_ulofdma_implicit_trig_qos_null;
+    A_UINT32 bn_ulofdma_implicit_trig_tried;
+    A_UINT32 bn_ulofdma_implicit_trig_qos_null;
 } htt_stats_rx_pdev_be_bn_ul_trig_tlv;
 /* preserve old names as aliases */
 typedef htt_stats_rx_pdev_be_bn_ul_trig_tlv
@@ -8140,6 +8236,8 @@ typedef struct {
      * response to basic trigger. Typically a data response is expected.
      */
     A_UINT32 ul_mumimo_basic_trigger_rx_qos_null_only;
+    /* Txop duration history from 0 to 12 ms with interval of 1000us */
+    A_UINT32 ul_mimo_txop_dur_hist[HTT_PDEV_STATS_TXOP_DUR_HIST_BINS];
 } htt_stats_rx_pdev_ul_mumimo_trig_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_rx_pdev_ul_mumimo_trig_stats_tlv
