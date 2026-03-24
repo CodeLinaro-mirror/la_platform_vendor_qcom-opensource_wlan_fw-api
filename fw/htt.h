@@ -279,9 +279,10 @@
  * 3.149 Add SAM fields in MPDUQ_OR_MSDUQ_INFO.
  * 3.150 Add htt_reg_write_selection definitions.
  * 3.151 Add HTT_H2T DAL_MODE_INFO def.
+ * 3.152 Add decap_type in htt_rx_peer_metadata_v1b.
  */
 #define HTT_CURRENT_VERSION_MAJOR 3
-#define HTT_CURRENT_VERSION_MINOR 151
+#define HTT_CURRENT_VERSION_MINOR 152
 
 #define HTT_NUM_TX_FRAG_DESC  1024
 
@@ -918,6 +919,8 @@ typedef enum {
     HTT_STATS_DPD_HW_CAL_RESULTS_TAG                = 255, /* htt_stats_dpd_hw_cal_results_tlv */
     HTT_STATS_TX_PDEV_TXOP_DUR_TAG                  = 256, /* htt_stats_tx_pdev_txop_dur_tlv */
     HTT_STATS_TXQ_COMBINED_SEQ_STATE_TAG            = 257, /* htt_stats_sched_txq_combined_seq_state_tlv */
+    HTT_STATS_CTL_TAG                               = 258, /* htt_stats_ctl_tlv */
+    HTT_STATS_ENHANCED_CTL_TAG                      = 259, /* htt_stats_enhanced_ctl_tlv */
 
     HTT_STATS_MAX_TAG,
 } htt_stats_tlv_tag_t;
@@ -21919,10 +21922,10 @@ PREPACK struct htt_rx_peer_metadata_v1a {
  *
  * The following diagram shows the format of the RX PEER METADATA V1B format.
  *
- * |31 29|28   26|25      22|21   14|   13  |12                  0|
- * |--------------------------------------------------------------|
- * |Rsvd2|CHIP ID|hw_link_id|VDEV ID|ML PEER|SW PEER ID/ML PEER ID|
- * |--------------------------------------------------------------|
+ * |31   |30 29|28   26|25      22|21   14|   13  |12                  0|
+ * |--------------------------------------------------------------------|
+ * |Rsvd2|DECAP|CHIP ID|hw_link_id|VDEV ID|ML PEER|SW PEER ID/ML PEER ID|
+ * |--------------------------------------------------------------------|
  */
 PREPACK struct htt_rx_peer_metadata_v1b {
     A_UINT32
@@ -21931,7 +21934,8 @@ PREPACK struct htt_rx_peer_metadata_v1b {
         vdev_id:         8,
         hw_link_id:      4,
         chip_id:         3,
-        reserved2:       3;
+        decap_type:      2,
+        reserved2:       1;
 } POSTPACK;
 
 #define HTT_RX_PEER_META_DATA_V1B_PEER_ID_S    0
@@ -21989,6 +21993,16 @@ PREPACK struct htt_rx_peer_metadata_v1b {
         ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V1B_CHIP_ID_S)); \
     } while (0)
 
+#define HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_S 29
+#define HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_M 0x60000000
+#define HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_GET(_var) \
+    (((_var) & HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_M) >> HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_S)
+
+#define HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_SET(_var, _val) \
+    do {                                             \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE, _val);  \
+        ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_S)); \
+    } while (0)
 
 /*
  * htt_rx_peer_metadata_v2 - HTT RX peer metadata version 2
@@ -22120,6 +22134,9 @@ extern void (*HTT_RX_PEER_META_DATA_QDATA_REFILL_SET) (A_UINT32 *var, A_UINT32 v
 extern A_UINT32 (*HTT_RX_PEER_META_DATA_PEER_SESSION_ID_GET) (A_UINT32 var);
 extern void (*HTT_RX_PEER_META_DATA_PEER_SESSION_ID_SET) (A_UINT32 *var, A_UINT32 val);
 
+extern A_UINT32 (*HTT_RX_PEER_META_DATA_DECAP_TYPE_GET) (A_UINT32 var);
+extern void (*HTT_RX_PEER_META_DATA_DECAP_TYPE_SET) (A_UINT32 *var, A_UINT32 val);
+
 
 /*
  * In some systems, the host SW wants to specify priorities between
@@ -22166,18 +22183,25 @@ enum HTT_MSDU_QTYPE {
     HTT_MSDU_QTYPE_HI_PRIO,        /* Specifies MSDUQ index used for high priority flow type */
     HTT_MSDU_QTYPE_LO_PRIO,        /* Specifies MSDUQ index used for low priority flow type */
 
+    HTT_MSDU_QTYPE_MAX, /* legacy limit (based on ROM compatibility) */
+
+    HTT_MSDU_QTYPE_LATENCY_CRIT_2,
+    HTT_MSDU_QTYPE_LATENCY_CRIT_3,
+    HTT_MSDU_QTYPE_LATENCY_CRIT_4,
+    HTT_MSDU_QTYPE_LATENCY_CRIT_5,
 
     /* New MSDU_QTYPE should be added above this line */
     /*
-     * Below QTYPE_MAX will increase if additional QTYPEs are defined
-     * in the future. Hence HTT_MSDU_QTYPE_MAX can't be used in
-     * any host/target message definitions.  The QTYPE_MAX value can
+     * Below QTYPE_MAX_EXT will increase if additional QTYPEs are defined
+     * in the future. Hence HTT_MSDU_QTYPE_MAX_EXT can't be used in
+     * any host/target message definitions.  The QTYPE_MAX_EXT value can
      * only be used internally within the host or within the target.
-     * If host or target find a qtype value is >= HTT_MSDU_QTYPE_MAX
+     * If host or target find a qtype value is >= HTT_MSDU_QTYPE_MAX_EXT
      * it must regard the unexpected value as a default qtype value,
      * or ignore it.
      */
-    HTT_MSDU_QTYPE_MAX,
+    HTT_MSDU_QTYPE_MAX_EXT,
+
     HTT_MSDU_QTYPE_NOT_IN_USE = 255, /* corresponding MSDU index is not in use */
 };
 
