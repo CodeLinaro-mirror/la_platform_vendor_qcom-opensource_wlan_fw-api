@@ -758,6 +758,18 @@ typedef  enum  {
     /* Service caps related to SMD Roaming - end */
 
     WMI_SERVICE_PEER_METADATA_V2_SUPPORT = 492, /* Support rx peer meta data v2 */
+    /* WMI_SERVICE_HANDLE_ROAMING_WITHOUT_RSO_STOP_FOR_4WAY_HS_OFFLOAD_DISABLE:
+     * Indicates support to handle roaming triggers while host is doing
+     * the EAPOL process for 4way HS offload disable case.
+     * FW needs to disable the roam triggers except deauth roaming.
+     */
+    WMI_SERVICE_HANDLE_ROAMING_WITHOUT_RSO_STOP_FOR_4WAY_HS_OFFLOAD_DISABLE = 493,
+    /* Indicates FW support for populating vdev operating param stats */
+    WMI_SERVICE_VDEV_OPERATING_PARAMS_EVENT_SUPPORT = 494,
+    WMI_SERVICE_SUPPORT_WOW_OLE_DAL = 495,
+    /* Indicate FW support for PASSTHRU VDEV Channel Hopping Schedule */
+    WMI_SERVICE_PASSTHRU_VDEV_CHAN_HOP_SCHEDULE_SUPPORT = 496,
+
 
     WMI_MAX_EXT2_SERVICE
 

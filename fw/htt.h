@@ -278,9 +278,12 @@
  * 3.148 Add HTT_PEER_CFR_CAPTURE_BW_320MHZ def.
  * 3.149 Add SAM fields in MPDUQ_OR_MSDUQ_INFO.
  * 3.150 Add htt_reg_write_selection definitions.
+ * 3.151 Add HTT_H2T DAL_MODE_INFO def.
+ * 3.152 Add decap_type in htt_rx_peer_metadata_v1b.
+ * 3.153 Add passthru_pkt flag in rx_peer_metadata structs.
  */
 #define HTT_CURRENT_VERSION_MAJOR 3
-#define HTT_CURRENT_VERSION_MINOR 150
+#define HTT_CURRENT_VERSION_MINOR 153
 
 #define HTT_NUM_TX_FRAG_DESC  1024
 
@@ -915,7 +918,10 @@ typedef enum {
     HTT_STATS_DPD_HALPHY_TAG                        = 253, /* htt_stats_dpd_halphy_tlv */
     HTT_STATS_DPD_HW_CAL_PARAMS_TAG                 = 254, /* htt_stats_dpd_hw_cal_params_tlv */
     HTT_STATS_DPD_HW_CAL_RESULTS_TAG                = 255, /* htt_stats_dpd_hw_cal_results_tlv */
-
+    HTT_STATS_TX_PDEV_TXOP_DUR_TAG                  = 256, /* htt_stats_tx_pdev_txop_dur_tlv */
+    HTT_STATS_TXQ_COMBINED_SEQ_STATE_TAG            = 257, /* htt_stats_sched_txq_combined_seq_state_tlv */
+    HTT_STATS_CTL_TAG                               = 258, /* htt_stats_ctl_tlv */
+    HTT_STATS_ENHANCED_CTL_TAG                      = 259, /* htt_stats_enhanced_ctl_tlv */
 
     HTT_STATS_MAX_TAG,
 } htt_stats_tlv_tag_t;
@@ -994,6 +1000,7 @@ enum htt_h2t_msg_type {
     HTT_H2T_MSG_TYPE_MPDUQ_AND_MSDUQ_INFO_HDR               = 0x29,
     HTT_H2T_MSG_TYPE_MPDUQ_OR_MSDUQ_INFO                    = 0x2a,
     HTT_H2T_MSG_TYPE_AST_INFO                               = 0x2b,
+    HTT_H2T_MSG_TYPE_DAL_MODE_INFO                          = 0x2c,
 
     /* keep this last */
     HTT_H2T_NUM_MSGS
@@ -12424,6 +12431,76 @@ PREPACK struct htt_ast_info_t {
         } while (0)
 
 
+/*
+ * @brief  host -> target HTT_H2T_MSG_TYPE_DAL_MODE_INFO message
+ *
+ * MSG_TYPE => HTT_H2T_MSG_TYPE_DAL_MODE_INFO (0x2C)
+ *
+ *    The message would appear as follows:
+ *    |31                16|15              8|7                 0|
+ *    |--------------------+-----------------+-------------------|
+ *    |       mode         |     pdev_id     |     msg_type      |
+ *    |----------------------------------------------------------|
+ *    |                    write_data_addr_lo                    |
+ *    |----------------------------------------------------------|
+ *    |                    write_data_addr_hi                    |
+ *    |----------------------------------------------------------|
+ *    |                    write_msi_addr_lo                     |
+ *    |----------------------------------------------------------|
+ *    |                    write_msi_addr_hi                     |
+ *    |----------------------------------------------------------|
+ *    |                    write_msi_data                        |
+ *    |----------------------------------------------------------|
+ *
+ * The message is interpreted as follows:
+ * dword0  - b'7:0   - msg_type
+ *           b'15:8  - pdev_id
+ *           b'31:16 - mode
+ * dword1  - b'31:0  - write_data_addr_lo
+ * dword2  - b'31:0  - write_data_addr_hi
+ * dword3  - b'31:0  - write_msi_addr_lo
+ * dword4  - b'31:0  - write_msi_addr_hi
+ * dword5  - b'31:0  - write_msi_data
+ */
+PREPACK struct htt_h2t_msg_dal_mode_info {
+        A_UINT32 msg_type:  8,
+                 pdev_id:   8,
+                 mode:     16;
+        A_UINT32 write_data_addr_lo;
+        A_UINT32 write_data_addr_hi;
+        A_UINT32 write_msi_addr_lo;
+        A_UINT32 write_msi_addr_hi;
+        A_UINT32 write_msi_data;
+} POSTPACK;
+
+#define HTT_H2T_MSG_DAL_MODE_INFO_SZ (sizeof(struct htt_h2t_msg_dal_mode_info))
+
+/* DWORD0 */
+#define HTT_H2T_MSG_DAL_MODE_INFO_PDEV_ID_M                  0x0000ff00
+#define HTT_H2T_MSG_DAL_MODE_INFO_PDEV_ID_S                  8
+
+#define HTT_H2T_MSG_DAL_MODE_INFO_PDEV_ID_GET(_var) \
+        (((_var) & HTT_H2T_MSG_DAL_MODE_INFO_PDEV_ID_M) >> \
+            HTT_H2T_MSG_DAL_MODE_INFO_PDEV_ID_S)
+#define HTT_H2T_MSG_DAL_MODE_INFO_PDEV_ID_SET(_var, _val) \
+        do { \
+            HTT_CHECK_SET_VAL(HTT_H2T_MSG_DAL_MODE_INFO_PDEV_ID, _val); \
+            ((_var) |= ((_val) << HTT_H2T_MSG_DAL_MODE_INFO_PDEV_ID_S)); \
+        } while (0)
+
+#define HTT_H2T_MSG_DAL_MODE_INFO_MODE_M                  0xffff0000
+#define HTT_H2T_MSG_DAL_MODE_INFO_MODE_S                  16
+
+#define HTT_H2T_MSG_DAL_MODE_INFO_MODE_GET(_var) \
+        (((_var) & HTT_H2T_MSG_DAL_MODE_INFO_MODE_M) >> \
+            HTT_H2T_MSG_DAL_MODE_INFO_MODE_S)
+#define HTT_H2T_MSG_DAL_MODE_INFO_MODE_SET(_var, _val) \
+        do { \
+            HTT_CHECK_SET_VAL(HTT_H2T_MSG_DAL_MODE_INFO_MODE, _val); \
+            ((_var) |= ((_val) << HTT_H2T_MSG_DAL_MODE_INFO_MODE_S)); \
+        } while (0)
+
+
 
 /*=== target -> host messages ===============================================*/
 
@@ -21754,10 +21831,12 @@ PREPACK struct htt_rx_peer_metadata_v1 {
  *
  * The following diagram shows the format of the RX PEER METADATA V1A format.
  *
- * |31 29|28   26|25           22|21   14|   13  |12                  0|
- * |-------------------------------------------------------------------|
- * |Rsvd2|CHIP ID|logical_link_id|VDEV ID|ML PEER|SW PEER ID/ML PEER ID|
- * |-------------------------------------------------------------------|
+ * |31   |29|28   26|25           22|21   14|   13  |12                  0|
+ * |----------------------------------------------------------------------|
+ * |Rsvd2|PT|CHIP ID|logical_link_id|VDEV ID|ML PEER|SW PEER ID/ML PEER ID|
+ * |----------------------------------------------------------------------|
+ * Where:
+ *     PT = passthrough packet
  */
 PREPACK struct htt_rx_peer_metadata_v1a {
     A_UINT32
@@ -21767,7 +21846,8 @@ PREPACK struct htt_rx_peer_metadata_v1a {
         logical_link_id: 4,
         chip_id:         3,
         qdata_refill:    1,
-        reserved2:       2;
+        passthru_pkt:    1,
+        reserved2:       1;
 } POSTPACK;
 
 #define HTT_RX_PEER_META_DATA_V1A_PEER_ID_S    0
@@ -21836,6 +21916,17 @@ PREPACK struct htt_rx_peer_metadata_v1a {
         ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V1A_QDATA_REFILL_S)); \
     } while (0)
 
+#define HTT_RX_PEER_META_DATA_V1A_PASSTHRU_PKT_S    30
+#define HTT_RX_PEER_META_DATA_V1A_PASSTHRU_PKT_M    0x40000000
+#define HTT_RX_PEER_META_DATA_V1A_PASSTHRU_PKT_GET(_var) \
+    (((_var) & HTT_RX_PEER_META_DATA_V1A_PASSTHRU_PKT_M) >> HTT_RX_PEER_META_DATA_V1A_PASSTHRU_PKT_S)
+
+#define HTT_RX_PEER_META_DATA_V1A_PASSTHRU_PKT_SET(_var, _val) \
+    do {                                             \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_META_DATA_V1A_PASSTHRU_PKT, _val);  \
+        ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V1A_PASSTHRU_PKT_S)); \
+    } while (0)
+
 
 /**
  * @brief target -> RX PEER METADATA V1B format
@@ -21846,10 +21937,10 @@ PREPACK struct htt_rx_peer_metadata_v1a {
  *
  * The following diagram shows the format of the RX PEER METADATA V1B format.
  *
- * |31 29|28   26|25      22|21   14|   13  |12                  0|
- * |--------------------------------------------------------------|
- * |Rsvd2|CHIP ID|hw_link_id|VDEV ID|ML PEER|SW PEER ID/ML PEER ID|
- * |--------------------------------------------------------------|
+ * |31   |30 29|28   26|25      22|21   14|   13  |12                  0|
+ * |--------------------------------------------------------------------|
+ * |Rsvd2|DECAP|CHIP ID|hw_link_id|VDEV ID|ML PEER|SW PEER ID/ML PEER ID|
+ * |--------------------------------------------------------------------|
  */
 PREPACK struct htt_rx_peer_metadata_v1b {
     A_UINT32
@@ -21858,7 +21949,8 @@ PREPACK struct htt_rx_peer_metadata_v1b {
         vdev_id:         8,
         hw_link_id:      4,
         chip_id:         3,
-        reserved2:       3;
+        decap_type:      2,
+        reserved2:       1;
 } POSTPACK;
 
 #define HTT_RX_PEER_META_DATA_V1B_PEER_ID_S    0
@@ -21916,18 +22008,29 @@ PREPACK struct htt_rx_peer_metadata_v1b {
         ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V1B_CHIP_ID_S)); \
     } while (0)
 
+#define HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_S 29
+#define HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_M 0x60000000
+#define HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_GET(_var) \
+    (((_var) & HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_M) >> HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_S)
+
+#define HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_SET(_var, _val) \
+    do {                                             \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE, _val);  \
+        ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V1B_DECAP_TYPE_S)); \
+    } while (0)
 
 /*
  * htt_rx_peer_metadata_v2 - HTT RX peer metadata version 2
  *
- * |31        21|20    13|12|11  9|8   6|  5  |4   0|
- * |------------+--------+--+-----+-----+-----+-----|
- * |  reserved  |peer    |Q | Log |VDEV | ML  |Peer |
- * |            |session |D |Link | ID  |Peer | ID  |
- * |            |ID      |R | ID  |     |Valid|     |
- * |------------+--------+--+-----+-----+-----+-----|
+ * |31     22|21|20    13|12|11  9|8   6|  5  |4   0|
+ * |---------+--+--------+--+-----+-----+-----+-----|
+ * |reserved |PT|peer    |Q | Log |VDEV | ML  |Peer |
+ * |         |  |session |D |Link | ID  |Peer | ID  |
+ * |         |  |ID      |R | ID  |     |Valid|     |
+ * |---------+--+--------+--+-----+-----+-----+-----|
  * Where:
  *     QDR = queue data refill
+ *     PT  = passthrough packet
  */
 PREPACK struct htt_rx_peer_metadata_v2 {
     A_UINT32
@@ -21937,7 +22040,8 @@ PREPACK struct htt_rx_peer_metadata_v2 {
         logical_link_id:  3,
         qdata_refill:     1,
         peer_session_id:  8,
-        reserved:        11;
+        passthru_pkt:     1,
+        reserved:        10;
 } POSTPACK;
 
 #define HTT_RX_PEER_META_DATA_V2_PEER_ID_S 0
@@ -22011,6 +22115,18 @@ PREPACK struct htt_rx_peer_metadata_v2 {
         ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V2_PEER_SESSION_ID_S)); \
     } while (0)
 
+#define HTT_RX_PEER_META_DATA_V2_PASSTHRU_PKT_S 21
+#define HTT_RX_PEER_META_DATA_V2_PASSTHRU_PKT_M 0x00200000
+
+#define HTT_RX_PEER_META_DATA_V2_PASSTHRU_PKT_GET(_var) \
+    (((_var) & HTT_RX_PEER_META_DATA_V2_PASSTHRU_PKT_M) >> \
+    HTT_RX_PEER_META_DATA_V2_PASSTHRU_PKT_S)
+#define HTT_RX_PEER_META_DATA_V2_PASSTHRU_PKT_SET(_var, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_META_DATA_V2_PASSTHRU_PKT, _val); \
+        ((_var) |= ((_val) << HTT_RX_PEER_META_DATA_V2_PASSTHRU_PKT_S)); \
+    } while (0)
+
 
 /* generic variables for masks and shifts for various fields */
 extern A_UINT32 HTT_RX_PEER_META_DATA_PEER_ID_S;
@@ -22046,6 +22162,9 @@ extern void (*HTT_RX_PEER_META_DATA_QDATA_REFILL_SET) (A_UINT32 *var, A_UINT32 v
 
 extern A_UINT32 (*HTT_RX_PEER_META_DATA_PEER_SESSION_ID_GET) (A_UINT32 var);
 extern void (*HTT_RX_PEER_META_DATA_PEER_SESSION_ID_SET) (A_UINT32 *var, A_UINT32 val);
+
+extern A_UINT32 (*HTT_RX_PEER_META_DATA_DECAP_TYPE_GET) (A_UINT32 var);
+extern void (*HTT_RX_PEER_META_DATA_DECAP_TYPE_SET) (A_UINT32 *var, A_UINT32 val);
 
 
 /*
@@ -22093,18 +22212,25 @@ enum HTT_MSDU_QTYPE {
     HTT_MSDU_QTYPE_HI_PRIO,        /* Specifies MSDUQ index used for high priority flow type */
     HTT_MSDU_QTYPE_LO_PRIO,        /* Specifies MSDUQ index used for low priority flow type */
 
+    HTT_MSDU_QTYPE_MAX, /* legacy limit (based on ROM compatibility) */
+
+    HTT_MSDU_QTYPE_LATENCY_CRIT_2,
+    HTT_MSDU_QTYPE_LATENCY_CRIT_3,
+    HTT_MSDU_QTYPE_LATENCY_CRIT_4,
+    HTT_MSDU_QTYPE_LATENCY_CRIT_5,
 
     /* New MSDU_QTYPE should be added above this line */
     /*
-     * Below QTYPE_MAX will increase if additional QTYPEs are defined
-     * in the future. Hence HTT_MSDU_QTYPE_MAX can't be used in
-     * any host/target message definitions.  The QTYPE_MAX value can
+     * Below QTYPE_MAX_EXT will increase if additional QTYPEs are defined
+     * in the future. Hence HTT_MSDU_QTYPE_MAX_EXT can't be used in
+     * any host/target message definitions.  The QTYPE_MAX_EXT value can
      * only be used internally within the host or within the target.
-     * If host or target find a qtype value is >= HTT_MSDU_QTYPE_MAX
+     * If host or target find a qtype value is >= HTT_MSDU_QTYPE_MAX_EXT
      * it must regard the unexpected value as a default qtype value,
      * or ignore it.
      */
-    HTT_MSDU_QTYPE_MAX,
+    HTT_MSDU_QTYPE_MAX_EXT,
+
     HTT_MSDU_QTYPE_NOT_IN_USE = 255, /* corresponding MSDU index is not in use */
 };
 
