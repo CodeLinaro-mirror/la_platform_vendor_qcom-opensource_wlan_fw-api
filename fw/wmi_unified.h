@@ -15892,6 +15892,11 @@ typedef struct {
      * (end of packet)
      */
     A_UINT32 rx_other_11ax_msdu_cnt;
+    /* pending_mpdu_msdus:
+     * count of the pending MPDUs + MSDUs for all TIDs within all peers
+     * for all the vdev under the specified pdev
+     */
+    A_UINT32 pending_mpdu_msdus;
 } wmi_pdev_extd_stats;
 
 /**
@@ -16056,11 +16061,6 @@ typedef struct {
      * Includes rx_time but not tx_time.
      */
     A_UINT32 cca_time;
-    /* pending_mpdu_msdus:
-     * count of the pending mpdu + msdus for all tids within all peers
-     * for the specified vdev
-     */
-    A_UINT32 pending_mpdu_msdus;
 } wmi_vdev_extd_stats;
 
 /**
@@ -20135,6 +20135,20 @@ typedef enum {
 
     /* Use BTWT ID0 for this vdev */
     WMI_VDEV_PARAM_USE_BTWT_ID0,                          /* 0xD0 */
+
+    /*
+     * Enable or disable UHR ELR capability in Auto rate and
+     * Fixed rate UHR data packet transmissions.
+     * Enable or disable Enhanced Long range
+     * valid values: 0 - Disable ELR, 1 - Enable ELR.
+     */
+    WMI_VDEV_PARAM_UHR_ELR,                               /* 0xD1 */
+
+    /*
+     * Enable or disable Non-data UHR Enhanced Long Range
+     * valid values: 0 - Disable ELR, 1 - Enable ELR.
+     */
+    WMI_VDEV_PARAM_NON_DATA_UHR_ELR,                      /* 0xD2 */
 
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
@@ -28278,15 +28292,14 @@ typedef struct {
      *     1 - full bandwidth need put to NOL
      *     Refer to WMI_RADAR_FLAGS_FULL_BW_NOL_GET and _SET macros
      *
-     * Bits 1-7:
+     * Bits 1-16:
      *     RADAR TYPE field (currently reserved for future use)
      *     When implemented, this field will indicate the type of
-     *     radar detected.
-     *     The meaning of the different values of this radar type field
-     *     will be specified in the future.
+     *     radar detected, and also the domain.
+     *     For example, a value of 0x4001 means domain = 4 and radar type = 1.
      *     Refer to WMI_RADAR_FLAGS_RADAR_TYPE_GET and _SET macros.
      *
-     * Bits 8-15:
+     * Bits 17-24:
      *     RADAR RSSI in dBm in the range of -128 to +127.
      *     This 8-bit value is interpreted as a twos-complement signed number
      *     (so for example, 0x80 = -128, 0x0 = 0, and 0x7f = 127).
@@ -28294,7 +28307,7 @@ typedef struct {
      *     WMI_SERVICE_RADAR_FLAGS_RSSI_DBM_SUPPORT
      *     wmi service flag is set.
      *
-     * [16:31] reserved
+     * [25:31] reserved
      */
     A_UINT32 flags;
 }  WMI_RADAR_FLAGS;
@@ -28303,9 +28316,9 @@ typedef struct {
 #define WMI_RADAR_FLAGS_FULL_BW_NOL_NUM_BITS  1
 
 #define WMI_RADAR_FLAGS_RADAR_TYPE_BITPOS     1
-#define WMI_RADAR_FLAGS_RADAR_TYPE_NUM_BITS   7
+#define WMI_RADAR_FLAGS_RADAR_TYPE_NUM_BITS   16
 
-#define WMI_RADAR_FLAGS_RSSI_DBM_BITPOS       8
+#define WMI_RADAR_FLAGS_RSSI_DBM_BITPOS       17
 #define WMI_RADAR_FLAGS_RSSI_DBM_NUM_BITS     8
 
 #define WMI_RADAR_FLAGS_FULL_BW_NOL_GET(flag) \
@@ -28334,6 +28347,157 @@ typedef struct {
     WMI_SET_BITS(flag, \
         WMI_RADAR_FLAGS_RSSI_DBM_BITPOS, \
         WMI_RADAR_FLAGS_RSSI_DBM_NUM_BITS, val)
+
+/* Bitfield layout constants */
+#define WMI_RADAR_DOMAIN_SHIFT 12
+#define WMI_RADAR_DOMAIN_MASK  0xF000
+#define WMI_RADAR_TYPE_MASK    0x0FFF
+
+/* Helper Macros */
+#define WMI_MAKE_RADAR_TYPE(domain, type) \
+    (((domain) << WMI_RADAR_DOMAIN_SHIFT) | ((type) & WMI_RADAR_TYPE_MASK))
+
+#define WMI_GET_RADAR_DOMAIN(radar_type) \
+    (((radar_type) & WMI_RADAR_DOMAIN_MASK) >> WMI_RADAR_DOMAIN_SHIFT)
+
+#define WMI_GET_RADAR_TYPE(radar_type) \
+    ((radar_type) & WMI_RADAR_TYPE_MASK)
+
+#define WMI_IS_RADAR_DOMAIN(radar_type, domain) \
+    (GET_RADAR_DOMAIN(radar_type) == (domain))
+
+/* Regulatory Domain Codes (4 bits = 0-15) */
+#define WMI_RADAR_DOMAIN_FCC        0x0    /* United States */
+#define WMI_RADAR_DOMAIN_ETSI_301   0x1    /* Europe EN 301 893 */
+#define WMI_RADAR_DOMAIN_ETSI_302   0x2    /* Europe EN 302 502 */
+#define WMI_RADAR_DOMAIN_CHINA      0x3    /* China */
+#define WMI_RADAR_DOMAIN_KOREA      0x4    /* Korea */
+#define WMI_RADAR_DOMAIN_JAPAN_W53  0x5    /* Japan W53 band */
+#define WMI_RADAR_DOMAIN_JAPAN_W56  0x6    /* Japan W56 band */
+#define WMI_RADAR_DOMAIN_JAPAN_W564 0x7    /* Japan W56.4 band */
+#define WMI_RADAR_DOMAIN_UNDEFINED  0xF    /* Undefined/Unknown */
+/* Reserved for future use: 0x8-0xE */
+
+/* Radar Type Codes within each domain (12 bits = 0-4095) */
+/* ===== FCC (United States) Radar Types ===== */
+#define WMI_DFS_RADAR_FCC_TYPE_0 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x001)
+#define WMI_DFS_RADAR_FCC_TYPE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x002)
+#define WMI_DFS_RADAR_FCC_TYPE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x004)
+#define WMI_DFS_RADAR_FCC_TYPE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x008)
+#define WMI_DFS_RADAR_FCC_TYPE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x010)
+#define WMI_DFS_RADAR_FCC_TYPE_5 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x020)
+#define WMI_DFS_RADAR_FCC_TYPE_6 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_FCC, 0x040)
+
+/* ===== ETSI EN 301 893 Radar Types ===== */
+#define WMI_DFS_RADAR_ETSI301_TYPE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x001)
+#define WMI_DFS_RADAR_ETSI301_TYPE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x002)
+#define WMI_DFS_RADAR_ETSI301_TYPE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x004)
+#define WMI_DFS_RADAR_ETSI301_TYPE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x008)
+#define WMI_DFS_RADAR_ETSI301_TYPE_52 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x010)
+#define WMI_DFS_RADAR_ETSI301_TYPE_62 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x020)
+#define WMI_DFS_RADAR_ETSI301_TYPE_1_2 \
+    /* Combined Type 1+2 */ \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x003)
+#define WMI_DFS_RADAR_ETSI301_TYPE_1_2_6  \
+    /* Combined Type 1+2+6 */ \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_301, 0x023)
+
+/* ===== ETSI EN 302 502 Radar Types ===== */
+#define WMI_DFS_RADAR_ETSI302_TYPE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x001)
+#define WMI_DFS_RADAR_ETSI302_TYPE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x002)
+#define WMI_DFS_RADAR_ETSI302_TYPE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x004)
+#define WMI_DFS_RADAR_ETSI302_TYPE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x008)
+#define WMI_DFS_RADAR_ETSI302_TYPE_5 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x010)
+#define WMI_DFS_RADAR_ETSI302_TYPE_6 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x020)
+#define WMI_DFS_RADAR_ETSI302_TYPE_1_2 \
+    /* Combined Type 1+2 */ \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_ETSI_302, 0x003)
+
+/* ===== China Radar Types ===== */
+#define WMI_DFS_RADAR_CHN_TYPE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x001)
+#define WMI_DFS_RADAR_CHN_TYPE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x002)
+#define WMI_DFS_RADAR_CHN_TYPE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x004)
+#define WMI_DFS_RADAR_CHN_TYPE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x008)
+#define WMI_DFS_RADAR_CHN_TYPE_5 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x010)
+#define WMI_DFS_RADAR_CHN_TYPE_6 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x020)
+#define WMI_DFS_RADAR_CHN_TYPE_1_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x003) /* Combined Type 1+2 */
+#define WMI_DFS_RADAR_CHN_TYPE_1_2_6 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x023) /* Combined Type 1+2+6 */
+#define WMI_DFS_RADAR_CHN_TYPE_3_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_CHINA, 0x00C) /* Combined Type 3+4 */
+
+/* ===== Korea Radar Types ===== */
+#define WMI_DFS_RADAR_KOR_TYPE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_KOREA, 0x001)
+#define WMI_DFS_RADAR_KOR_TYPE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_KOREA, 0x002)
+#define WMI_DFS_RADAR_KOR_TYPE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_KOREA, 0x004)
+#define WMI_DFS_RADAR_KOR_TYPE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_KOREA, 0x008)
+
+/* ===== Japan W53 Band Radar Types ===== */
+#define WMI_DFS_RADAR_JAP_W53_FIXED_PULSE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W53, 0x001)
+#define WMI_DFS_RADAR_JAP_W53_FIXED_PULSE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W53, 0x002)
+#define WMI_DFS_RADAR_JAP_W53_VAR_PULSE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W53, 0x004)
+#define WMI_DFS_RADAR_JAP_W53_VAR_PULSE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W53, 0x008)
+
+/* ===== Japan W56 Band Radar Types ===== */
+#define WMI_DFS_RADAR_JAP_W56_FIXED_PULSE_1 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x001)
+#define WMI_DFS_RADAR_JAP_W56_FIXED_PULSE_2 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x002)
+#define WMI_DFS_RADAR_JAP_W56_FIXED_PULSE_3 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x004)
+#define WMI_DFS_RADAR_JAP_W56_VAR_PULSE_4 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x008)
+#define WMI_DFS_RADAR_JAP_W56_VAR_PULSE_5 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x010)
+#define WMI_DFS_RADAR_JAP_W56_VAR_PULSE_6 \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x020)
+#define WMI_DFS_RADAR_JAP_W56_CHIRP \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x040)
+#define WMI_DFS_RADAR_JAP_W56_FIXED_PULSE_1_2 \
+    /* Combined Type 1+2 */ \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W56, 0x003)
+
+/* ===== Japan W56.4 Band Radar Types ===== */
+#define WMI_DFS_RADAR_JAP_W564_HOPPING \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_JAPAN_W564, 0x001)
+
+/* ===== Undefined/Unknown ===== */
+#define WMI_DFS_RADAR_TYPE_UNDEF \
+    WMI_MAKE_RADAR_TYPE(WMI_RADAR_DOMAIN_UNDEFINED, 0xFFF)
 
 
 typedef enum {
@@ -31871,6 +32035,12 @@ typedef struct {
      */
     wmi_mac_addr smd_identifier;
     /**
+     * Length of KDE data which is received on EAPOL M3 frame or
+     * reassoc reponse frame.
+     * Ex: SAE PW ID KDE data
+     */
+    A_UINT32 kde_length;
+    /**
      * TLV (tag length value) parameters follows roam_synch_event
      * The TLV's are:
      *     A_UINT8 bcn_probe_rsp_frame[bcn_probe_resp_len];
@@ -31888,6 +32058,7 @@ typedef struct {
      *     wmi_key_material_ext key_ext[];
      *     wmi_roam_pmk_cache_synch_tlv_param roam_pmk_cache_synch_info[];
      *     wmi_pdev_band_to_mac mac_freq_mapping[];
+     *     A_UINT8 kde_data[];
      */
 } wmi_roam_synch_event_fixed_param;
 
@@ -41204,6 +41375,8 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_PDEV_POWER_DATAPATH_STATS_CMDID);
         WMI_RETURN_STRING(WMI_SMD_ROAM_CONFIG_CMDID);
         WMI_RETURN_STRING(WMI_SMD_ROAM_PEER_UNIFIED_SETUP_CMDID);
+        WMI_RETURN_STRING(WMI_VDEV_UNIFIED_CONNECT_CMDID);
+        WMI_RETURN_STRING(WMI_VDEV_UNIFIED_DISCONNECT_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
@@ -53067,6 +53240,8 @@ typedef enum {
 typedef enum {
     WMI_PDEV_POWER_BOOST_TS_FIRST_PASS = 0,
     WMI_PDEV_POWER_BOOST_TS_SECOND_PASS,
+    WMI_PDEV_POWER_BOOST_TS_THIRD_PASS,
+    WMI_PDEV_POWER_BOOST_TS_FOURTH_PASS,
 
     WMI_PDEV_POWER_BOOST_TS_MAX
 } wmi_pdev_power_boost_training_stage;
