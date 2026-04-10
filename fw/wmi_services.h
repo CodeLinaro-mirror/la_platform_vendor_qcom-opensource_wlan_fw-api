@@ -767,6 +767,15 @@ typedef  enum  {
     /* Indicates FW support for populating vdev operating param stats */
     WMI_SERVICE_VDEV_OPERATING_PARAMS_EVENT_SUPPORT = 494,
     WMI_SERVICE_SUPPORT_WOW_OLE_DAL = 495,
+    /* Indicate FW support for PASSTHRU VDEV Channel Hopping Schedule */
+    WMI_SERVICE_PASSTHRU_VDEV_CHAN_HOP_SCHEDULE_SUPPORT = 496,
+    /*
+     * Indicates FW support for shared memory model to pass
+     * ongoing TBTT count downs to Host.
+     */
+    WMI_SERVICE_SHARED_MEM_MODEL_TBTT_COUNT_DOWN = 497,
+    /* Indicate FW support for IPI (Idle Power Indicate) stats collection */
+    WMI_SERVICE_IDLE_POWER_INDICATE_SUPPORT = 498,
 
 
     WMI_MAX_EXT2_SERVICE
