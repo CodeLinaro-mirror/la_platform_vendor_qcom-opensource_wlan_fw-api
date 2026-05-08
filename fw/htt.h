@@ -281,9 +281,11 @@
  * 3.151 Add HTT_H2T DAL_MODE_INFO def.
  * 3.152 Add decap_type in htt_rx_peer_metadata_v1b.
  * 3.153 Add passthru_pkt flag in rx_peer_metadata structs.
+ * 3.154 Add T2H PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP msg def.
+ * 3.155 Add rxmon hdrlen specs in rx_ring_selection_cfg_t.
  */
 #define HTT_CURRENT_VERSION_MAJOR 3
-#define HTT_CURRENT_VERSION_MINOR 153
+#define HTT_CURRENT_VERSION_MINOR 155
 
 #define HTT_NUM_TX_FRAG_DESC  1024
 
@@ -6196,6 +6198,11 @@ enum htt_srng_ring_id {
  * dword28- b'0-31  - packet_type_enable_data_fpmo_flags_1 - filter bmap for
  *                    full pkt buffer each mode ctrl/data type/subtype for
  *                    fpmo mode
+ * dword29- b'0-31  - rdi_based_source_cfg
+ *                    Each bit maps to an RDI; if set, the corresponding
+ *                    ring ID is configured as a source buffer.
+ *                    Applies only to HTT_RXDMA_WBM_BUF0/1/2_RING.
+ * dword30- b'0-31  - wifi8 header length configurations.
  */
 PREPACK struct htt_rx_ring_selection_cfg_t {
     A_UINT32 msg_type:          8,
@@ -6279,6 +6286,21 @@ PREPACK struct htt_rx_ring_selection_cfg_t {
      * Below Field only applies for HTT_RXDMA_WBM_BUF0/1/2_RING
      */
     A_UINT32 rdi_based_source_cfg;
+
+    A_UINT32 rxmon_fpmo_data_hdrlen    : 2,
+             rxmon_fpmo_ctrl_hdrlen    : 2,
+             rxmon_fpmo_mgmt_hdrlen    : 2,
+             rxmon_fp_data_hdrlen      : 2,
+             rxmon_fp_ctrl_hdrlen      : 2,
+             rxmon_fp_mgmt_hdrlen      : 2,
+             rxmon_mo_data_hdrlen      : 2,
+             rxmon_mo_ctrl_hdrlen      : 2,
+             rxmon_mo_mgmt_hdrlen      : 2,
+             rxmon_md_data_hdrlen      : 2,
+             rxmon_md_ctrl_hdrlen      : 2,
+             rxmon_md_mgmt_hdrlen      : 2,
+             rxmon_enable_hdr_per_ppdu : 1,
+             rxmon_rsvd                : 7;
 } POSTPACK;
 
 /**
@@ -6960,6 +6982,150 @@ enum htt_reg_write_selection {
          HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_PACKET_TYPE_ENABLE_DATA_FPMO_FLAGS1, _val); \
          ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_PACKET_TYPE_ENABLE_DATA_FPMO_FLAGS1_S)); \
      } while (0)
+
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_DATA_HDRLEN_M     0x00000003
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_DATA_HDRLEN_S     0
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_DATA_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_DATA_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_DATA_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_DATA_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_DATA_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_DATA_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_CTRL_HDRLEN_M     0x0000000C
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_CTRL_HDRLEN_S     2
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_CTRL_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_CTRL_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_CTRL_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_CTRL_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_CTRL_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_CTRL_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_MGMT_HDRLEN_M     0x00000030
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_MGMT_HDRLEN_S     4
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_MGMT_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_MGMT_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_MGMT_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_MGMT_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_MGMT_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMON_FPMO_MGMT_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_DATA_HDRLEN_M     0x000000C0
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_DATA_HDRLEN_S     6
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_DATA_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMON_FP_DATA_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMON_FP_DATA_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_DATA_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMON_FP_DATA_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMON_FP_DATA_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_CTRL_HDRLEN_M     0x00000300
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_CTRL_HDRLEN_S     8
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_CTRL_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMON_FP_CTRL_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMON_FP_CTRL_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_CTRL_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMON_FP_CTRL_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMON_FP_CTRL_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_MGMT_HDRLEN_M     0x00000C00
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_MGMT_HDRLEN_S     10
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_MGMT_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMON_FP_MGMT_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMON_FP_MGMT_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_MGMT_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMON_FP_MGMT_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMON_FP_MGMT_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_DATA_HDRLEN_M     0x00003000
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_DATA_HDRLEN_S     12
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_DATA_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMON_MO_DATA_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMON_MO_DATA_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_DATA_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMON_MO_DATA_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMON_MO_DATA_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_CTRL_HDRLEN_M     0x0000C000
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_CTRL_HDRLEN_S     14
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_CTRL_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMON_MO_CTRL_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMON_MO_CTRL_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_CTRL_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMON_MO_CTRL_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMON_MO_CTRL_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_MGMT_HDRLEN_M     0x00030000
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_MGMT_HDRLEN_S     16
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_MGMT_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMON_MO_MGMT_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMON_MO_MGMT_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMON_MO_MGMT_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMON_MO_MGMT_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMON_MO_MGMT_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_DATA_HDRLEN_M     0x000C0000
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_DATA_HDRLEN_S     18
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_DATA_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMDN_MD_DATA_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMDN_MD_DATA_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_DATA_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMDN_MD_DATA_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMDN_MD_DATA_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_CTRL_HDRLEN_M     0x00300000
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_CTRL_HDRLEN_S     20
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_CTRL_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMDN_MD_CTRL_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMDN_MD_CTRL_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_CTRL_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMDN_MD_CTRL_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMDN_MD_CTRL_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_MGMT_HDRLEN_M     0x00C00000
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_MGMT_HDRLEN_S     22
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_MGMT_HDRLEN_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMDN_MD_MGMT_HDRLEN_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMDN_MD_MGMT_HDRLEN_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_MD_MGMT_HDRLEN_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMDN_MD_MGMT_HDRLEN, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMDN_MD_MGMT_HDRLEN_S)); \
+            } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_ENABLE_HEADER_PER_PPDU_M     0x01000000
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_ENABLE_HEADER_PER_PPDU_S     24
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_ENABLE_HEADER_PER_PPDU_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_RXMDN_ENABLE_HEADER_PER_PPDU_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_RXMDN_ENABLE_HEADER_PER_PPDU_S)
+#define HTT_RX_RING_SELECTION_CFG_RXMDN_ENABLE_HEADER_PER_PPDU_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMDN_ENABLE_HEADER_PER_PPDU, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMDN_ENABLE_HEADER_PER_PPDU_S)); \
+            } while (0)
 
 
 /*
@@ -12577,6 +12743,7 @@ enum htt_t2h_msg_type {
     HTT_T2H_MSG_TYPE_MLO_LATENCY_REQ               = 0x3d,
     HTT_T2H_MSG_TYPE_GLOBAL_PEER_ID_UNMAP          = 0x3e,
     HTT_T2H_MSG_TYPE_HAPS                          = 0x3f,
+    HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP = 0x40,
 
 
     HTT_T2H_MSG_TYPE_TEST,
@@ -24729,6 +24896,57 @@ PREPACK struct htt_t2h_power_state_info {
         ((_var) |= ((_val) << HTT_T2H_POWER_STATE_INFO_HTT_TIME_LOW_S));\
     } while (0)
 
+
+/* MSG_TYPE => HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP
+ *
+ * The following diagram shows the format of the peer delete all global vdev
+ * unmap message sent from the target to the host. This message is used to
+ * send unmap event to host after tid and msduq/mpduq cleanup of all peers
+ * associated to a vdev, in FW, host cleans up msduq/mpduq based on message.
+ *
+ * |31                    20|19      16|15              8|7               0|
+ * |------------------------+----------+-----------------+-----------------|
+ * |       reserved         |hw_link_id| global_vdev_id  |     msg type    |
+ * |-----------------------------------------------------------------------|
+ * @details
+ * struct htt_t2h_peer_del_all_global_vdev_id_unmap_t:
+ *
+ * The message is interpreted as follows:
+ * dword0 - b'7:0   - msg_type: This will be set to 0x40
+ *                    (HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP)
+ *          b'15:8  - global_vdev_id : global vdev id assigned by host
+ *          b'19:16 - hw_link_id : hw link id for which unmap is being sent
+ *          b'31:20 - reserved
+ */
+/* HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP */
+PREPACK struct htt_t2h_peer_del_all_global_vdev_id_unmap_t {
+    A_UINT32 msg_type:               8,  /* bits  7:0  */
+             global_vdev_id:         8,  /* bits 15:8  */
+             hw_link_id:             4,  /* bits 19:16 */
+             reserved:               12; /* bits 31:20 */
+} POSTPACK;
+
+#define HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_GLOBAL_VDEV_ID_M 0x0000FF00
+#define HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_GLOBAL_VDEV_ID_S 8
+#define HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_GLOBAL_VDEV_ID_GET(_var) \
+    (((_var) & HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_GLOBAL_VDEV_ID_M) >> \
+     HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_GLOBAL_VDEV_ID_S)
+#define HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_GLOBAL_VDEV_ID_SET(_var, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_GLOBAL_VDEV_ID, _val); \
+        ((_var) |= ((_val) << HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_GLOBAL_VDEV_ID_S)); \
+    } while (0)
+
+#define HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_HW_LINK_ID_M 0x000F0000
+#define HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_HW_LINK_ID_S 16
+#define HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_HW_LINK_ID_GET(_var) \
+    (((_var) & HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_HW_LINK_ID_M) >> \
+     HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_HW_LINK_ID_S)
+#define HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_HW_LINK_ID_SET(_var, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_HW_LINK_ID, _val); \
+        ((_var) |= ((_val) << HTT_T2H_MSG_TYPE_PEER_DEL_ALL_GLOBAL_VDEV_ID_UNMAP_HW_LINK_ID_S)); \
+    } while (0)
 
 
 #endif
