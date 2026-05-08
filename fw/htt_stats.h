@@ -11956,7 +11956,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_CAL_DATA_COMPRESSED_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_CAL_DATA_COMPRESSED, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_CAL_DATA_COMPRESSED_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_CAL_DATA_COMPRESSED_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_CAL_DATA_SOURCE_M 0x00000006
 #define HTT_STATS_PHY_RESET_CAL_DATA_SOURCE_S 1
@@ -11966,7 +11966,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_CAL_DATA_SOURCE_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_CAL_DATA_SOURCE, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_CAL_DATA_SOURCE_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_CAL_DATA_SOURCE_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_XTALCAL_M 0x00000008
 #define HTT_STATS_PHY_RESET_XTALCAL_S 3
@@ -11976,7 +11976,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_XTALCAL_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_XTALCAL, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_XTALCAL_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_XTALCAL_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_TPCCAL2GOPC_M 0x00000010
 #define HTT_STATS_PHY_RESET_TPCCAL2GOPC_S 4
@@ -11986,7 +11986,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_TPCCAL2GOPC_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_TPCCAL2GOPC, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_TPCCAL2GOPC_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_TPCCAL2GOPC_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_TPCCAL2GFPC_M 0x00000020
 #define HTT_STATS_PHY_RESET_TPCCAL2GFPC_S 5
@@ -11996,7 +11996,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_TPCCAL2GFPC_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_TPCCAL2GFPC, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_TPCCAL2GFPC_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_TPCCAL2GFPC_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_TPCCAL5GOPC_M 0x00000040
 #define HTT_STATS_PHY_RESET_TPCCAL5GOPC_S 6
@@ -12006,7 +12006,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_TPCCAL5GOPC_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_TPCCAL5GOPC, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_TPCCAL5GOPC_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_TPCCAL5GOPC_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_TPCCAL5GFPC_M 0x00000080
 #define HTT_STATS_PHY_RESET_TPCCAL5GFPC_S 7
@@ -12016,7 +12016,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_TPCCAL5GFPC_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_TPCCAL5GFPC, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_TPCCAL5GFPC_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_TPCCAL5GFPC_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_TPCCAL6GOPC_M 0x00000100
 #define HTT_STATS_PHY_RESET_TPCCAL6GOPC_S 8
@@ -12026,7 +12026,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_TPCCAL6GOPC_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_TPCCAL6GOPC, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_TPCCAL6GOPC_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_TPCCAL6GOPC_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_TPCCAL6GFPC_M 0x00000200
 #define HTT_STATS_PHY_RESET_TPCCAL6GFPC_S 9
@@ -12036,7 +12036,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_TPCCAL6GFPC_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_TPCCAL6GFPC, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_TPCCAL6GFPC_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_TPCCAL6GFPC_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_RXGAINCAL2G_M 0x00000400
 #define HTT_STATS_PHY_RESET_RXGAINCAL2G_S 10
@@ -12046,7 +12046,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_RXGAINCAL2G_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_RXGAINCAL2G, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_RXGAINCAL2G_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_RXGAINCAL2G_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_RXGAINCAL5G_M 0x00000800
 #define HTT_STATS_PHY_RESET_RXGAINCAL5G_S 11
@@ -12056,7 +12056,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_RXGAINCAL5G_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_RXGAINCAL5G, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_RXGAINCAL5G_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_RXGAINCAL5G_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_RXGAINCAL6G_M 0x00001000
 #define HTT_STATS_PHY_RESET_RXGAINCAL6G_S 12
@@ -12066,7 +12066,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_RXGAINCAL6G_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_RXGAINCAL6G, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_RXGAINCAL6G_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_RXGAINCAL6G_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_AOACAL2G_M 0x00002000
 #define HTT_STATS_PHY_RESET_AOACAL2G_S 13
@@ -12076,7 +12076,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_AOACAL2G_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_AOACAL2G, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_AOACAL2G_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_AOACAL2G_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_AOACAL5G_M 0x00004000
 #define HTT_STATS_PHY_RESET_AOACAL5G_S 14
@@ -12086,7 +12086,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_AOACAL5G_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_AOACAL5G, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_AOACAL5G_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_AOACAL5G_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_AOACAL6G_M 0x00008000
 #define HTT_STATS_PHY_RESET_AOACAL6G_S 15
@@ -12096,7 +12096,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_AOACAL6G_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_AOACAL6G, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_AOACAL6G_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_AOACAL6G_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_XTAL_FROM_OTP_M 0x00010000
 #define HTT_STATS_PHY_RESET_XTAL_FROM_OTP_S 16
@@ -12106,7 +12106,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_XTAL_FROM_OTP_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_XTAL_FROM_OTP, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_XTAL_FROM_OTP_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_XTAL_FROM_OTP_S)); \
     } while (0)
 
 #define HTT_STATS_PHY_RESET_GLUT_LINEARITY_M 0x000000FF
@@ -12117,7 +12117,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_GLUT_LINEARITY_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_GLUT_LINEARITY, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_GLUT_LINEARITY_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_GLUT_LINEARITY_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_PLUT_LINEARITY_M 0x0000FF00
 #define HTT_STATS_PHY_RESET_PLUT_LINEARITY_S 8
@@ -12127,7 +12127,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_PLUT_LINEARITY_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_PLUT_LINEARITY, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_PLUT_LINEARITY_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_PLUT_LINEARITY_S)); \
     } while (0)
 #define HTT_STATS_PHY_RESET_WLANDRIVERMODE_M 0x00FF0000
 #define HTT_STATS_PHY_RESET_WLANDRIVERMODE_S 16
@@ -12137,7 +12137,7 @@ typedef htt_stats_phy_stats_tlv htt_phy_stats_tlv;
 #define HTT_STATS_PHY_RESET_WLANDRIVERMODE_SET(_var, _val) \
     do { \
         HTT_CHECK_SET_VAL(HTT_STATS_PHY_RESET_WLANDRIVERMODE, _val); \
-        ((_var) |= ((_val) << STATS_PHY_RESET_WLANDRIVERMODE_S)); \
+        ((_var) |= ((_val) << HTT_STATS_PHY_RESET_WLANDRIVERMODE_S)); \
     } while (0)
 
 
@@ -12746,8 +12746,66 @@ typedef struct {
                  is_e_ani_enabled:          1, /* bit 6 */
                  is_spur_mit_enabled:       1, /* bit 7 */
                  is_multigain_rssi_enabled: 1, /* bit 8 */
+                 is_olpc_clpc:              1, /* bit 9 */
+                 is_abi_en_dis:             1, /* bit 10 */
+                 is_str_sig_rec:            1, /* bit 11 */
+                 is_verbose_enabled:        1, /* bit 12 */
+                 is_dyn_ant_sel_supported:  1, /* bit 13 */
+                 is_dfs_punc_enabled:       1, /* bit 14 */
+                 is_ctl_blob_downloaded:    1, /* bit 15 */
+                 dpd_pow_bo_status:         1, /* bit 16 */
+                 is_eeprom_compressed:      1, /* bit 17 */
+                 is_ctl_table_loaded:       1, /* bit 18 */
+                 reserved: 13; /* bits 31:19 */
+        };
+    };
 
-                 reserved: 23; /* bits 31:9 */
+    union {
+        A_UINT32 rxsop_config;
+        struct {
+            A_UINT32
+                is_rxsop_enabled:    1, /* bit 0 */
+                rxsop_config_value:  8, /* bit 8:1 */
+                rxsop_reserved: 23; /* bits 31:9 */
+        };
+    };
+
+    A_INT32 reg_tx_pow_limit; /* dBm units */
+    A_INT32 user_pow_limit; /* dBm units */
+    A_UINT32 abi_max_rg_gain; /* dB units */
+    A_UINT32 abi_max_lg_gain; /* dB units */
+    A_UINT32 abi_max_vlg_gain; /* dB units */
+    /* abi_hold_mode:
+     * Controls how long gain table decisions are held:
+     *     0: Cleared each packet
+     *     1: Held for timer value
+     *     2: Gain table choices are under CSR control
+     */
+    A_UINT32 abi_hold_mode;
+    A_UINT32 abi_hold_count;
+    A_INT32 rssi_temp_offset; /* dB units */
+    A_INT32 rssi_xlna_bypass_offset; /* dB units */
+    A_INT32 rssi_cbw_offset; /* dB units */
+    A_INT32 rssi_chan_freq_offset; /* dB units */
+    A_UINT32 regdb_version;
+    A_UINT32 otp_version;
+    A_UINT32 cfr_clip_factor[4];
+    union {
+        A_UINT32 hc__premcs__pkt_type__word32;
+        struct {
+            A_UINT32
+                hc_premcs:   16, /* bits 15:0 */
+                hc_pkt_type: 16; /* bits 31:16 */
+        };
+    };
+    union {
+        A_UINT32 hc_nss_thr__is_rx_gain_forced__rx_gain_forced_val__word32;
+        struct {
+            A_UINT32
+                hc_nss_thr: 8,         /* bits 7:0 */
+                is_rx_gain_forced: 8,  /* bits 15:8 */
+                rx_gain_forced_val: 8, /* bits 23:16 */
+                reserved2: 8; /* bits 31:24 */
         };
     };
 } htt_stats_optional_configs_tlv;
@@ -12796,6 +12854,92 @@ typedef struct {
     (((word) & 0x100) >> 8)
 #define HTT_STATS_OPT_CONF_SET_MULTIGAIN_RSSI(word, value) \
     ((word) = ((word) & ~0x100) | (((value) & 0x1) << 8))
+
+#define HTT_STATS_OPT_CONF_GET_OLPC_CLPC(word) \
+    (((word) & 0x200) >> 9)
+#define HTT_STATS_OPT_CONF_SET_OLPC_CLPC(word, value) \
+    ((word) = ((word) & ~0x200) | (((value) & 0x1) << 9))
+
+#define HTT_STATS_OPT_CONF_GET_ABI_EN_DIS(word) \
+    (((word) & 0x400) >> 10)
+#define HTT_STATS_OPT_CONF_SET_ABI_EN_DIS(word, value) \
+    ((word) = ((word) & ~0x400) | (((value) & 0x1) << 10))
+
+#define HTT_STATS_OPT_CONF_GET_STR_SIG_REC(word) \
+    (((word) & 0x800) >> 11)
+#define HTT_STATS_OPT_CONF_SET_STR_SIG_REC(word, value) \
+    ((word) = ((word) & ~0x800) | (((value) & 0x1) << 11))
+
+#define HTT_STATS_OPT_CONF_GET_VERBOSE(word) \
+    (((word) & 0x1000) >> 12)
+#define HTT_STATS_OPT_CONF_SET_VERBOSE(word, value) \
+    ((word) = ((word) & ~0x1000) | (((value) & 0x1) << 12))
+
+#define HTT_STATS_OPT_CONF_GET_DYN_ANT_SEL(word) \
+    (((word) & 0x2000) >> 13)
+#define HTT_STATS_OPT_CONF_SET_DYN_ANT_SEL(word, value) \
+    ((word) = ((word) & ~0x2000) | (((value) & 0x1) << 13))
+
+#define HTT_STATS_OPT_CONF_GET_DFS_PUNC(word) \
+    (((word) & 0x4000) >> 14)
+#define HTT_STATS_OPT_CONF_SET_DFS_PUNC(word, value) \
+    ((word) = ((word) & ~0x4000) | (((value) & 0x1) << 14))
+
+#define HTT_STATS_OPT_CONF_GET_CTL_BLOB_DOWNLODED(word) \
+    (((word) & 0x8000) >> 15)
+#define HTT_STATS_OPT_CONF_SET_CTL_BLOB_DOWNLODED(word, value) \
+    ((word) = ((word) & ~0x8000) | (((value) & 0x1) << 15))
+
+#define HTT_STATS_OPT_CONF_GET_DPD_POW_BO(word) \
+    (((word) & 0x10000) >> 16)
+#define HTT_STATS_OPT_CONF_SET_DPD_POW_BO(word, value) \
+    ((word) = ((word) & ~0x10000) | (((value) & 0x1) << 16))
+
+#define HTT_STATS_OPT_CONF_GET_EEPROM_COMPRESSED(word) \
+    (((word) & 0x20000) >> 17)
+#define HTT_STATS_OPT_CONF_SET_EEPROM_COMPRESSED(word, value) \
+    ((word) = ((word) & ~0x20000) | (((value) & 0x1) << 17))
+
+#define HTT_STATS_OPT_CONF_GET_CTL_TABLE_LOADED(word) \
+    (((word) & 0x40000) >> 18)
+#define HTT_STATS_OPT_CONF_SET_CTL_TABLE_LOADED(word, value) \
+    ((word) = ((word) & ~0x40000) | (((value) & 0x1) << 18))
+
+
+#define HTT_STATS_OPT_CONF_GET_RXSOP_ENABLED(word) \
+    (((word) & 0x1) >> 0)
+#define HTT_STATS_OPT_CONF_SET_RXSOP_ENABLED(word, value) \
+    ((word) = ((word) & ~0x1) | (((value) & 0x1) << 0))
+
+#define HTT_STATS_OPT_CONF_GET_RXSOP_CONFIG_VALUE(word) \
+    (((word) & 0x1FE) >> 1)
+#define HTT_STATS_OPT_CONF_SET_RXSOP_CONFIG_VALUE(word, value) \
+    ((word) = ((word) & ~0x1FE) | (((value) & 0xFF) << 1))
+
+#define HTT_STATS_OPT_CONF_GET_HC_PREMCS(word) \
+    ((word) & 0xFFFF)
+#define HTT_STATS_OPT_CONF_SET_HC_PREMCS(word, value) \
+    ((word) = ((value) & 0xFFFF))
+
+#define HTT_STATS_OPT_CONF_GET_HC_PKT_TYPE(word) \
+    (((word) & 0xFFFF0000) >> 16)
+#define HTT_STATS_OPT_CONF_SET_HC_PKT_TYPE(word, value) \
+    ((word) = ((word) & ~0xFFFF0000) | (((value) & 0xFFFF) << 16))
+
+#define HTT_STATS_OPT_CONF_GET_HC_NSS_THR(word) \
+    (((word) & 0x000000FF) >> 0)
+#define HTT_STATS_OPT_CONF_SET_HC_NSS_THR(word, value) \
+    ((word) = ((word) & ~0x000000FF) | (((value) & 0xFF) << 0))
+
+#define HTT_STATS_OPT_CONF_GET_IS_RX_GAIN_FORCED(word) \
+    (((word) & 0x0000FF00) >> 8)
+#define HTT_STATS_OPT_CONF_SET_IS_RX_GAIN_FORCED(word, value) \
+    ((word) = ((word) & ~0x0000FF00) | (((value) & 0xFF) << 8))
+
+#define HTT_STATS_OPT_CONF_GET_RX_GAIN_FORCED_VAL(word) \
+    (((word) & 0x00FF0000) >> 16)
+#define HTT_STATS_OPT_CONF_SET_RX_GAIN_FORCED_VAL(word, value) \
+    ((word) = ((word) & ~0x00FF0000) | (((value) & 0xFF) << 16))
 
 
 /* FTM STATS */
@@ -16176,12 +16320,19 @@ typedef struct {
     htt_tlv_hdr_t tlv_hdr;
     union {
         struct {
-            A_UINT32 afc_local_rsvd : 8,
+            A_UINT32 afc_local_rsvd : 8, /* bits 7:0 */
                      /* enum WMI_AFC_FEATURE_6G_DEPLOYMENT_TYPE */
-                     deployment_type: 8,
+                     deployment_type: 8, /* bits 15:8 */
                      /* Bit 0 : LPI, Bit 1 : SP, Bit 2 : VLP, others: rsvd */
-                     power_mode_mask: 8,
-                     reserved       : 8;
+                     power_mode_mask: 8, /* bits 23:16 */
+                     /* Tx is suspended or not */
+                     is_tx_allowed_by_afc: 1, /* bit 24 */
+                     /* is_tx_allowed_by_hw_min_power_check:
+                      * channel is blocked or not due to the HW Minimum power
+                      * compliance check
+                      */
+                     is_tx_allowed_by_hw_min_power_check: 1, /* bit 25 */
+                     reserved: 6;
         };
         A_UINT32 afc_ini_params; /* AFC_INI_CONFIG */
     };
@@ -16209,19 +16360,30 @@ typedef struct {
 } htt_stats_reg_6g_tlv;
 
 #define HTT_STATS_REG_6G_GET_AFC_LOCAL_RSVD(word) \
-    HTT_STATS_GET_FIELD(0xFF, 0, (word))
+    HTT_STATS_GET_FIELD(0x000000FF, 0, (word))
 #define HTT_STATS_REG_6G_SET_AFC_LOCAL_RSVD(word,value) \
-    HTT_STATS_SET_FIELD(0xFF, 0, (word), (value))
+    HTT_STATS_SET_FIELD(0x000000FF, 0, (word), (value))
 
 #define HTT_STATS_REG_6G_GET_DEPLOYMENT_TYPE(word) \
-    HTT_STATS_GET_FIELD(0xFF00, 8, (word))
+    HTT_STATS_GET_FIELD(0x0000FF00, 8, (word))
 #define HTT_STATS_REG_6G_SET_DEPLOYMENT_TYPE(word,value) \
-    HTT_STATS_SET_FIELD(0xFF00, 8, (word), (value))
+    HTT_STATS_SET_FIELD(0x0000FF00, 8, (word), (value))
 
 #define HTT_STATS_REG_6G_GET_POWER_MODE_MASK(word) \
-    HTT_STATS_GET_FIELD(0xFF0000, 16, (word))
+    HTT_STATS_GET_FIELD(0x00FF0000, 16, (word))
 #define HTT_STATS_REG_6G_SET_POWER_MODE_MASK(word,value) \
-    HTT_STATS_SET_FIELD(0xFF0000, 16, (word), (value))
+    HTT_STATS_SET_FIELD(0x00FF0000, 16, (word), (value))
+
+#define HTT_STATS_REG_6G_GET_IS_TX_ALLOWED_BY_AFC(word) \
+    HTT_STATS_GET_FIELD(0x01000000, 24, (word))
+#define HTT_STATS_REG_6G_SET_IS_TX_ALLOWED_BY_AFC(word,value) \
+    HTT_STATS_SET_FIELD(0x01000000, 24, (word), (value))
+
+#define HTT_STATS_REG_6G_GET_IS_TX_ALLOWED_BY_HW_MIN_POWER_CHECK(word) \
+    HTT_STATS_GET_FIELD(0x02000000, 25, (word))
+#define HTT_STATS_REG_6G_SET_IS_TX_ALLOWED_BY_HW_MIN_POWER_CHECK(word,value) \
+    HTT_STATS_SET_FIELD(0x02000000, 25, (word), (value))
+
 
 #define HTT_STATS_REG_6G_GET_SET_TPC_COUNT(word) \
     HTT_STATS_GET_FIELD(0xFFFF, 0, (word))
@@ -16253,6 +16415,7 @@ typedef struct {
 #define HTT_STATS_REG_6G_SET_BEST_POWER_MODE_COUNT(word,value) \
     HTT_STATS_SET_FIELD(0xFFFF0000, 16, (word), (value))
 #define HTT_STATS_REG_POWER_INFO_6G_MAX_SUBBANDS 16
+
 
 typedef struct {
     union {
