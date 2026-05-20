@@ -778,6 +778,26 @@ typedef  enum  {
     WMI_SERVICE_IDLE_POWER_INDICATE_SUPPORT = 498,
     /* Indicates FW support to add Radar type and domain in WMI radar event */
     WMI_SERVICE_RADAR_FLAGS_TYPE_SUPPORT = 499,
+    /* Indicates FW support to perform Master migration when master peer gets deleted */
+    WMI_SERVICE_ML_PEER_MASTER_MIGRATION_SUPPORT = 500,
+    WMI_SERVICE_NAN_AP_ASSISTED_DFS_OPERATION_SUPPORT = 501, /* Indicates FW supports NAN DFS operation */
+    /*
+     * Indicates FW supports TDLS Stats command/event,
+     * used for sending TDLS connect info and TDLS data stats
+     */
+    WMI_SERVICE_TDLS_STATS_SUPPORT = 502,
+    WMI_SERVICE_L3_HEADER_PADDING_ENABLE = 503,
+
+    /*
+     * Indicates FW supports only known action ids and discards
+     * saving any unknown action ids
+     */
+    WMI_SERVICE_SUPPORT_KNOWN_ACTION_IDS = 504,
+    /*
+     * Indicates FW supports cloud based control for whitelist or blacklist
+     * AP configuration
+     */
+    WMI_SERVICE_SUPPORT_WHITELIST_BLACKLIST_AP_CONFIG = 505,
 
 
     WMI_MAX_EXT2_SERVICE
