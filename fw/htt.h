@@ -936,6 +936,7 @@ typedef enum {
     HTT_STATS_TXQ_COMBINED_SEQ_STATE_TAG            = 257, /* htt_stats_txq_combined_seq_state_tlv */
     HTT_STATS_CTL_TAG                               = 258, /* htt_stats_ctl_tlv */
     HTT_STATS_ENHANCED_CTL_TAG                      = 259, /* htt_stats_enhanced_ctl_tlv */
+    HTT_STATS_NPCA_TAG                              = 260, /* htt_stats_npca_tlv */
 
     HTT_STATS_MAX_TAG,
 } htt_stats_tlv_tag_t;
@@ -6234,7 +6235,11 @@ enum htt_srng_ring_id {
  *                    newer packet_type_enable_data_flags_* are valid or not
  *                    If not set, will use pkt_type_enable_flags for both status
  *                    and full pkt buffer configuration.
- *          b'30:31 - rsvd1:  reserved for future use
+ *          b'30    - is_monitor_mode: specify whether monitor mode is enabled.
+ *                    Helpful to configure monitor-mode related filters.
+ *                    These filters cause throughput dip if enabled in
+ *                    non-monitor mode.
+ *          b'31    - rsvd1:  reserved for future use
  * dword1 - b'0:15  - ring_buffer_size: size of bufferes referenced by rx ring,
  *                    in byte units.
  *                    Valid only for HW_TO_SW_RING and SW_TO_HW_RING
@@ -6451,7 +6456,8 @@ PREPACK struct htt_rx_ring_selection_cfg_t {
              drop_thresh_valid: 1,
              rx_mon_global_en:  1,
              packet_type_enable_data: 1,
-             rsvd1:             2;
+             is_monitor_mode:   1,
+             rsvd1:             1;
     A_UINT32 ring_buffer_size: 16,
              config_length_mgmt:3,
              config_length_ctrl:3,
@@ -6653,6 +6659,18 @@ enum htt_reg_write_selection {
                 HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_PACKET_TYPE_ENABLE_DATA, _val); \
                 ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_PACKET_TYPE_ENABLE_DATA_S)); \
             } while (0)
+
+#define HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_M    0x40000000
+#define HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_S           30
+#define HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_GET(_var) \
+            (((_var) & HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_M) >> \
+                    HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_S)
+#define HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_SET(_var, _val) \
+            do { \
+                HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE, _val); \
+                ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_IS_MONITOR_MODE_S)); \
+            } while (0)
+
 
 #define HTT_RX_RING_SELECTION_CFG_RING_BUFFER_SIZE_M           0x0000ffff
 #define HTT_RX_RING_SELECTION_CFG_RING_BUFFER_SIZE_S           0

@@ -948,6 +948,8 @@ enum htt_dbg_ext_stats_type {
      */
     HTT_DBG_EXT_STATS_DPD = 85,
 
+    HTT_DBG_EXT_STATS_NPCA = 86,
+
 
     /* keep this last */
     HTT_DBG_NUM_EXT_STATS = 256,
@@ -3980,6 +3982,9 @@ typedef struct {
     A_UINT32 sta_dps_bn_bsr_trigger_err[HTT_NUM_AC_WMM];
     /** 11bn UHR MU RTS trigger to DPS client completed with errors(s) */
     A_UINT32 sta_dps_bn_mu_rts_trigger_err[HTT_NUM_AC_WMM];
+
+    /** 11BN UHR UL OFDMA RU allocation mode - trigger error count */
+    A_UINT32 bn_basic_trig_ru_alloc_mode_err[HTT_BN_UL_OFDMA_NUM_RU_ALLOC_MODES];
 } htt_stats_tx_selfgen_bn_tlv;
 
 typedef struct { /* DEPRECATED */
@@ -5283,6 +5288,11 @@ typedef struct {
     A_UINT32 user_index;
     /** HTT_STATS_TX_SCHED_MODE_xxx */
     A_UINT32 tx_sched_mode;
+    /**
+     * Wi-Fi version identifier to differentiate stats while printing
+     * (contains enum HTT_RX_TX_PDEV_STATS_WIFI_VERSION value).
+     */
+    A_UINT32 wifi_version;
 } htt_stats_tx_pdev_mpdu_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_tx_pdev_mpdu_stats_tlv htt_tx_pdev_mpdu_stats_tlv;
@@ -16963,6 +16973,26 @@ typedef struct {
     A_UINT32 sq_idx[HTT_STATS_MAX_CHAINS][HTT_STATS_NUM_DPD_CAL_TABLE];
     A_INT32  nmse_chain[HTT_STATS_MAX_CHAINS][HTT_STATS_NUM_DPD_CAL_TABLE];
 } htt_stats_dpd_hw_cal_results_tlv;
+
+typedef struct {
+    htt_tlv_hdr_t tlv_hdr;
+    A_UINT32 mu_rts_tx_success;
+    A_UINT32 mu_rts_tx_fail;
+    A_UINT32 mu_rts_rx_success;
+    A_UINT32 bsrp_ntb_tx_success;
+    A_UINT32 bsrp_ntb_tx_fail;
+    A_UINT32 bsrp_ntb_rx_success;
+    A_UINT32 bsrp_tx_success;
+    A_UINT32 bsrp_tx_fail;
+    A_UINT32 bsrp_rx_success;
+    A_UINT32 npca_tx_bw[HTT_TX_PDEV_STATS_NUM_BN_BW_COUNTERS];
+    A_UINT32 npca_su_tx_punctured_mode[HTT_TX_PDEV_STATS_NUM_PUNCTURED_MODE_COUNTERS];
+    A_UINT32 npca_rx_bw[HTT_TX_PDEV_STATS_NUM_BN_BW_COUNTERS];
+    A_UINT32 npca_su_rx_punctured_mode[HTT_TX_PDEV_STATS_NUM_BN_BW_COUNTERS];
+    A_UINT32 schd_cmd_result_npca[HTT_STATS_MAX_SCH_CMD_RESULT];
+    htt_tx_rate_stats_t npca_per_bw[HTT_TX_PDEV_STATS_NUM_BN_BW_COUNTERS];
+    htt_tx_rate_stats_t npca_per_tx_su_punctured_mode[HTT_TX_PDEV_STATS_NUM_PUNCTURED_MODE_COUNTERS];
+} htt_stats_npca_tlv;
 
 
 #endif /* __HTT_STATS_H__ */
