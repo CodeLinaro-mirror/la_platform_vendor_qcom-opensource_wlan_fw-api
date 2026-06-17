@@ -20979,6 +20979,12 @@ typedef enum {
      */
     WMI_VDEV_PARAM_NON_DATA_UHR_ELR,                      /* 0xD2 */
 
+    /*
+     * Dynamically disable/enable AUX-L thru vendor cmd
+     */
+    WMI_VDEV_PARAM_AUX_L_DISABLE,                         /* 0xD3 */
+
+
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
      * The below vdev param types are used for prototyping, and are
