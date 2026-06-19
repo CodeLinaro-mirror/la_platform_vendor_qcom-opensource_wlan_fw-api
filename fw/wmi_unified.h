@@ -45817,6 +45817,7 @@ typedef struct {
     A_UINT32 add_sta_slot_interval;          /* Interval between decisions making to create TWT slots for STAs */
     A_UINT32 remove_sta_slot_interval;       /* Interval between decisions making to remove TWT slot of STAs */
     A_UINT32 flags;                          /* enable/disable flags, refer to MACROs TWT_EN_DIS_FLAGS_* (TWT_EN_DIS_FLAGS_GET_BTWT etc.) */
+    A_UINT32 voip_pkt_ul_delay_ms;           /* delay from when a VOIP RTP packet is queued until it is received by the WLAN target */
 } wmi_twt_enable_cmd_fixed_param;
 
 /* status code of enabling TWT */
