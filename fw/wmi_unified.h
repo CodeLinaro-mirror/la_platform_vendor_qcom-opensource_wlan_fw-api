@@ -1902,6 +1902,9 @@ typedef enum {
 
     /** WMI cmds for MAPC (Multi-AP Coordination) */
     WMI_PEER_SET_MAPC_PARAMS_CMDID = WMI_CMD_GRP_START_ID(WMI_GRP_MAPC),
+
+    /** WMI command for host to query MAPC capability/service bitmaps from FW */
+    WMI_PEER_GET_MAPC_PARAMS_CMDID,
 } WMI_CMD_ID;
 
 typedef enum {
@@ -2945,6 +2948,10 @@ typedef enum {
 
     /** WMI event to send chipset debug log stats to host */
     WMI_GET_CHIPSET_LOGGING_STATS_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_CHIPSET_LOG),
+
+    /** WMI events for MAPC (Multi-AP Coordination) */
+    WMI_PEER_MAPC_SETUP_STATUS_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_MAPC),
+    WMI_PEER_MAPC_GET_PARAMS_EVENTID,
 } WMI_EVT_ID;
 
 /* defines for OEM message sub-types */
@@ -4347,6 +4354,15 @@ typedef struct {
      * Carries DBE Maximum Supported Bandwidth and optional EHT-MCS Maps.
      */
     A_UINT32 uhr_cap_dbe_info[WMI_MAX_UHRCAP_DBE_SIZE];
+
+    /*
+     * Maximum number of Co-AP (MAPC) peers supported per link.
+     * Valid only when WMI_SERVICE_UHR_MAX_CO_AP_PEERS is set.
+     * 0 = unspecified.
+     */
+    A_UINT32 max_uhr_co_ap_peers;
+
+    A_UINT32 max_uhr_ctdma_ap_peers;
 
     /* Followed by next TLVs:
      *     WMI_DMA_RING_CAPABILITIES          dma_ring_caps[];
@@ -57481,6 +57497,21 @@ typedef struct {
     A_UINT32     mapc_scheme_enable_bitmap; /* WMI_MAPC_SCHEME_* bitmask */
 } wmi_peer_set_mapc_params_cmd_fixed_param;
 
+/* ================================================================ */
+/* WMI_PEER_GET_MAPC_PARAMS_CMDID structures                        */
+/* ================================================================ */
+
+/*
+ * wmi_peer_get_mapc_params_cmd_fixed_param:
+ * Sent by host to request the stored MAPC parameters for a specific peer.
+ * FW also dumps WMI service capability bitmaps to the diag log.
+ */
+typedef struct {
+    A_UINT32     tlv_header; /* WMITLV_TAG_STRUC_wmi_peer_get_mapc_params_cmd_fixed_param */
+    A_UINT32     vdev_id;
+    wmi_mac_addr peer_macaddr; /* peer whose stored MAPC params to return */
+} wmi_peer_get_mapc_params_cmd_fixed_param;
+
 /*
  * wmi_mapc_cmn_params:
  * Common MAPC params shared across all schemes.
@@ -57496,22 +57527,30 @@ typedef struct {
 
     /* APID assigned by remote C-AP to local AP */
     A_UINT32     apid_from_neighbor_peer;
+} wmi_mapc_cmn_params;
+
+/*
+ * wmi_mapc_cmn_q2q_params:
+ * Vendor Q2Q APID params (may arrive independently of common params).
+ */
+typedef struct {
+    A_UINT32     tlv_header; /* WMITLV_TAG_STRUC_wmi_mapc_cmn_q2q_params */
 
     /* Vendor Q2Q APID assigned to remote peer */
     A_UINT32     q2q_apid_to_neighbor_peer;
 
     /* Vendor Q2Q APID assigned by remote peer */
     A_UINT32     q2q_apid_from_neighbor_peer;
-} wmi_mapc_cmn_params;
+} wmi_mapc_cmn_q2q_params;
 
 /*
- * wmi_mapc_cotdma_params: mapc_ctdma_profile + mapc_txop_sharing_policy
- * Co-TDMA per-peer policy parameters.
+ * wmi_mapc_ctdma_profile:
+ * Co-TDMA channel profile parameters.
  */
 typedef struct {
-    A_UINT32 tlv_header; /* WMITLV_TAG_STRUC_wmi_mapc_cotdma_params */
+    A_UINT32 tlv_header; /* WMITLV_TAG_STRUC_wmi_mapc_ctdma_profile */
 
-    /* Channel info — mapc_ctdma_profile */
+    /* Channel info */
     A_UINT32 channel_width; /* operating channel width (MHz) */
     A_UINT32 ccfs;          /* center channel frequency segment index */
     A_UINT32 bss_color;     /* 802.11ax/be BSS color */
@@ -57520,18 +57559,25 @@ typedef struct {
     A_UINT32 rx_txop_return_support;
 
     A_UINT32 disable_subchannel_bitmap; /* subchannels to disable */
+} wmi_mapc_ctdma_profile;
 
-    /* TXOP sharing policy — mapc_txop_sharing_policy */
+/*
+ * wmi_mapc_ctdma_txop_sharing_policy:
+ * Co-TDMA TXOP sharing policy parameters.
+ */
+typedef struct {
+    A_UINT32 tlv_header; /* WMITLV_TAG_STRUC_wmi_mapc_ctdma_txop_sharing_policy */
+
     A_UINT32 primary_ac;  /* primary AC: VO=0 VI=1 BE=2 BK=3 */
-    A_UINT32 nbr_ap_prio; /* Cotroller set nbr shared ap prio */
+    A_UINT32 nbr_ap_prio; /* Controller set nbr shared ap prio */
     A_UINT32 latency_sensitive_threshold_us;
-    A_UINT32 service_start_time; /* TSF-relative service window start (us) */
-    A_UINT32 service_interval;   /* periodicity (us); 0 = always available */
-    A_UINT32 service_end_time;   /* TSF-relative service window end (us) */
+    A_UINT32 service_start_time_us; /* SCS service window start */
+    A_UINT32 service_interval_us;   /* SCS service window period; 0 = always available */
+    A_UINT32 service_end_time_us;   /* SCS service window end */
     A_UINT32 critical_traffic_dur_thresh_us;
     A_UINT32 max_shared_txop_dur_us; /* per-AC max shared TXOP */
     A_UINT32 min_shared_txop_dur_us; /* per-AC min TXOP to trigger C-TDMA */
-} wmi_mapc_cotdma_params;
+} wmi_mapc_ctdma_txop_sharing_policy;
 
 /*
  * Stub structures for future MAPC coordination schemes.
@@ -57552,6 +57598,38 @@ typedef struct { A_UINT32 tlv_header; } wmi_mapc_cobf_params;
  * restricted-TWT service periods to avoid overlapping transmissions. */
 typedef struct { A_UINT32 tlv_header; } wmi_mapc_cortwt_params;
 
+/*
+ * wmi_mapc_peer_setup_status_event_fixed_param:
+ * Sent by FW after each WMI_PEER_SET_MAPC_PARAMS_CMDID to report which
+ * TLV groups have been received and whether the peer is ready or blocked.
+ */
+typedef struct {
+    A_UINT32 tlv_header; /* WMITLV_TAG_STRUC_wmi_mapc_peer_setup_status_event_fixed_param */
+    A_UINT32 vdev_id;
+    wmi_mac_addr peer_macaddr;
+
+    /* WMI_MAPC_SCHEME_* bitmask from the command */
+    A_UINT32 scheme_enable_bitmap;
+
+    /* MAPC_SET_* bitmask of TLV groups received so far */
+    A_UINT32 param_sets_recvd;
+
+    /* MAPC_SET_* bitmask of groups still missing; 0 = peer ready */
+    A_UINT32 param_sets_missing;
+} wmi_mapc_peer_setup_status_event_fixed_param;
+
+/*
+ * wmi_mapc_peer_get_params_event_fixed_param:
+ * Response to WMI_PEER_GET_MAPC_PARAMS_CMDID; carries all stored MAPC params
+ * for the requested peer in the same TLV groups as the SET command.
+ */
+typedef struct {
+    A_UINT32 tlv_header; /* WMITLV_TAG_STRUC_wmi_mapc_peer_get_params_event_fixed_param */
+    A_UINT32 vdev_id;
+    wmi_mac_addr peer_macaddr;
+    A_UINT32 scheme_enable_bitmap; /* WMI_MAPC_SCHEME_* bitmask */
+    A_UINT32 param_sets_recvd;     /* MAPC_SET_* bitmask of groups present */
+} wmi_mapc_peer_get_params_event_fixed_param;
 
 typedef enum {
     WMI_PDEV_SET_CUMAC_CHIP_ID_SUCCESS = 0,

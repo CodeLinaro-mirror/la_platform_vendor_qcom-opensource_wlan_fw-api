@@ -858,6 +858,9 @@ typedef  enum  {
      */
     WMI_SERVICE_PDEV_SET_CUMAC_CHIP_CMD_SUPPORT = 520,
 
+    /* Services related to MAPC / C-TDMA (802.11bn) */
+    WMI_SERVICE_UHR_MAX_CTDMA_AP_PEERS_SUPPORT = 520,
+
 
     WMI_MAX_EXT2_SERVICE
 
