@@ -2681,7 +2681,9 @@ typedef struct {
              sw_rts_success:    1,
              sw_rts_failure:    1,
              cts_rcvd_diff_bw:  1,
-             reserved2:        28;
+             urrn_warning_type: 1,
+             mpdu_underrun_cnt: 16,
+             reserved2:        11;
 
     /*
      * Max rates configured per BW:
@@ -2693,6 +2695,10 @@ typedef struct {
      * hw protection frame's FES duration in micro seconds.
      */
     A_UINT32 hw_prot_dur_us;
+
+    A_UINT32 num_eof_delim;
+
+    A_UINT32 num_null_delim;
 } htt_ppdu_stats_user_cmpltn_common_tlv;
 
 #define HTT_PPDU_STATS_USER_CMPLTN_BA_BITMAP_TLV_TID_NUM_M     0x000000ff
