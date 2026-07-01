@@ -57200,6 +57200,8 @@ typedef enum {
     WMI_VDEV_UHR_CU_IN_PROGRESS,
     WMI_VDEV_UHR_CU_ESTABLISHED,
     WMI_VDEV_UHR_CU_SESSION_END,
+    WMI_VDEV_UHR_CU_POST_NOTIF_DONE,
+    WMI_VDEV_UHR_CU_SESSION_ABORT,
 } wmi_vdev_uhr_cu_state;
 
 typedef struct {
