@@ -7191,6 +7191,8 @@ typedef enum {
 #define WMI_SCAN_FLAG_EXT_STOP_IF_BSSID_FOUND    0x00080000
 #define WMI_SCAN_FLAG_EXT_P2P_SCAN               0x00100000
 #define WMI_SCAN_FLAG_EXT_DISABLE_SINGLE_MAC_AUX 0x00200000
+/* FORCE_AUX_ALL: Force scan to use AUX MAC for all the scan channels */
+#define WMI_SCAN_FLAG_EXT_FORCE_AUX_ALL          0x00400000
 
 
 /**
@@ -20791,7 +20793,9 @@ typedef enum {
      * bit 2: MFPR in RSN CAP
      * bit 3: URNM_MFPR_X20 in RSNXE
      * bit 4: RSTA_EXTCAP_I2R_LMR_FB
-     * bit 31:5 Reserved
+     * bit 5: RSTA_I2R_LMR_FB_EN
+     *        (0 => I2R LMR Feedback disabled in RSTA IFTM; 1 => enabled)
+     * bit 31:6 Reserved
      */
     WMI_VDEV_PARAM_11AZ_SECURITY_CONFIG,    /* 0xAB */
 
