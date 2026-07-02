@@ -24145,6 +24145,8 @@ typedef struct {
     /*
      * Variable-length TLV arrays follow this fixed param:
      *   wmi_peer_uhr_omp_npca_params peer_omp_npca_params[];
+     *   wmi_peer_uhr_omp_sta_dps_params peer_omp_sta_dps_params[];
+     *   wmi_peer_uhr_omp_dso_params  peer_omp_dso_params[];
      *   Place Holder for other TLVs
      */
 } wmi_peer_uhr_omp_cmd_fixed_param;
@@ -24307,6 +24309,75 @@ typedef struct {
     WMI_GET_BITS(_var, 29, 1)
 #define WMI_OMP_STA_DPS_MOBILE_AP_STATIC_HCM_SET(_var, _val) \
     WMI_SET_BITS(_var, 29, 1, _val)
+
+typedef struct{
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_peer_uhr_omp_dso_params */
+    /*
+     * Bit0:3:  DSO hw_link_id
+     *          WMI_OMP_DSO_HW_LINK_ID_GET /  _SET
+     * Bit4:    Enable/Disable  DSO params
+     *          WMI_OMP_DSO_ENABLE_GET / _SET
+     * Bit5:    Update DSO params
+     *          WMI_OMP_DSO_UPDATE_GET / _SET
+     * Bit6:31: Reserved
+    */
+    A_UINT32 omp_dso_caps;
+    /*
+     * Bit0:5:   DSO Padding Delay
+     *           The DSO Padding Delay field indicates the minimum MAC
+     *           padding duration, in units of 4 μs, that a DSO non-AP STA
+     *           requires in an ICF to switch from its primary subband to
+     *           its DSO subband.
+     *           WMI_OMP_DSO_PADDING_DELAY_GET / _SET
+     *
+     * Bit6:11:  DSO Switching Back Delay
+     *           The DSO Switching(#Ed) Back Delay field indicates the time,
+     *           in units of 4 μs, required by the DSO non-AP STA to switch
+     *           from its DSO subband to its primary subband.
+     *           WMI_OMP_DSO_SWITCH_BACK_DELAY_GET / _SET
+     *
+     * Bit12:13: Preferred 80 MHz DSO Subband
+     *           The Preferred 80 MHz DSO Subband field indicates the
+     *           DSO non-AP STA's preferred 80 MHz DSO subband when the
+     *           AP's BSS bandwidth is 320 MHz and the DSO non-AP STA's
+     *           operating bandwidth is 80 MHz; this field is reserved
+     *           for all other cases.
+     *           The value of this field specifies the position of the
+     *           preferred 80 MHz DSO subband within the 320 MHz BSS
+     *           bandwidth, where a value of 0 corresponds to the 80 MHz
+     *           DSO subband lowest in frequency, 1 corresponds to the
+     *           80 MHz DSO subband next higher in frequency, 2 corresponds
+     *           to 80 MHz DSO subband highest in frequency, and 3 is
+     *           reserved.
+     *
+     * Bit14:31: Reserved
+     */
+    A_UINT32 omp_dso_param;
+} wmi_peer_uhr_omp_dso_params;
+
+#define WMI_OMP_DSO_HW_LINK_ID_GET(_var)       WMI_GET_BITS(_var, 0, 4)
+#define WMI_OMP_DSO_HW_LINK_ID_SET(_var, _val) WMI_SET_BITS(_var, 0, 4, _val)
+
+#define WMI_OMP_DSO_ENABLE_GET(_var)           WMI_GET_BITS(_var, 4, 1)
+#define WMI_OMP_DSO_ENABLE_SET(_var, _val)     WMI_SET_BITS(_var, 4, 1, _val)
+
+#define WMI_OMP_DSO_UPDATE_GET(_var)           WMI_GET_BITS(_var, 5, 1)
+#define WMI_OMP_DSO_UPDATE_SET(_var, _val)     WMI_SET_BITS(_var, 5, 1, _val)
+
+#define WMI_OMP_DSO_PADDING_DELAY_GET(_var) \
+    WMI_GET_BITS(_var, 0, 6)
+#define WMI_OMP_DSO_PADDING_DELAY_SET(_var, _val) \
+    WMI_SET_BITS(_var, 0, 6, _val)
+
+#define WMI_OMP_DSO_SWITCH_BACK_DELAY_GET(_var) \
+    WMI_GET_BITS(_var, 6, 6)
+#define WMI_OMP_DSO_SWITCH_BACK_DELAY_SET(_var, _val) \
+    WMI_SET_BITS(_var, 6, 6, _val)
+
+#define WMI_OMP_PREFERRED_80MHZ_DSO_SUBBAND_GET(_var) \
+    WMI_GET_BITS(_var, 12, 2)
+#define WMI_OMP_PREFERRED_80MHZ_DSO_SUBBAND_SET(_var, _val) \
+    WMI_SET_BITS(_var, 12, 2, _val)
 
 
 typedef struct {
