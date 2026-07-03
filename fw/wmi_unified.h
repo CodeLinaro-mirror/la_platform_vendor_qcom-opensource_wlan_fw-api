@@ -20793,9 +20793,7 @@ typedef enum {
      * bit 2: MFPR in RSN CAP
      * bit 3: URNM_MFPR_X20 in RSNXE
      * bit 4: RSTA_EXTCAP_I2R_LMR_FB
-     * bit 5: RSTA_I2R_LMR_FB_EN
-     *        (0 => I2R LMR Feedback disabled in RSTA IFTM; 1 => enabled)
-     * bit 31:6 Reserved
+     * bit 31:5 Reserved
      */
     WMI_VDEV_PARAM_11AZ_SECURITY_CONFIG,    /* 0xAB */
 
@@ -21004,6 +21002,19 @@ typedef enum {
      */
     WMI_VDEV_PARAM_AUX_L_DISABLE,                         /* 0xD3 */
 
+    /*
+     * RSTA FTM-response config (per-FTMR-response params; kept separate from
+     * WMI_VDEV_PARAM_11AZ_SECURITY_CONFIG which carries beacon security caps).
+     * param_value bits:
+     *   bit 0: I2R_LMR_FB_OVERRIDE
+     *          1 => host drives I2R LMR Feedback via bit 1 (I2R_LMR_FB_EN);
+     *          0 => FW negotiation (default)
+     *   bit 1: I2R_LMR_FB_EN
+     *          emitted I2R LMR Feedback when bit 0 set (else ignored)
+     *   bit 31:2 Reserved
+     */
+    WMI_VDEV_PARAM_RTT_11AZ_FTM_RSP_CONFIG,               /* 0xD4 */
+
 
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
@@ -21183,6 +21194,12 @@ typedef enum {
 
     /*=== END VDEV_PARAM_PROTOTYPE SECTION ===*/
 } WMI_VDEV_PARAM;
+
+/* WMI_VDEV_PARAM_RTT_11AZ_FTM_RSP_CONFIG param_value bit accessors */
+#define WMI_VDEV_RTT_11AZ_I2R_LMR_FB_OVERRIDE_GET(param_value) WMI_GET_BITS(param_value, 0, 1)
+#define WMI_VDEV_RTT_11AZ_I2R_LMR_FB_OVERRIDE_SET(param_value, val) WMI_SET_BITS(param_value, 0, 1, val)
+#define WMI_VDEV_RTT_11AZ_I2R_LMR_FB_EN_GET(param_value) WMI_GET_BITS(param_value, 1, 1)
+#define WMI_VDEV_RTT_11AZ_I2R_LMR_FB_EN_SET(param_value, val) WMI_SET_BITS(param_value, 1, 1, val)
 
 /* EHT Modes */
 #define WMI_VDEV_EHT_SUBFEE_IS_ENABLED(eht_mu_mode) WMI_GET_BITS((eht_mu_mode), 0, 1)
