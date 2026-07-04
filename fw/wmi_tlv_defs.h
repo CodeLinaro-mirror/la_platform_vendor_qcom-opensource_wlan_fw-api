@@ -1665,6 +1665,8 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_mapc_peer_setup_status_event_fixed_param,
     WMITLV_TAG_STRUC_wmi_mapc_peer_get_params_event_fixed_param,
     WMITLV_TAG_STRUC_wmi_peer_uhr_omp_dso_params,
+    WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_req_fixed_param,
+    WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_rsp_fixed_param,
 } WMITLV_TAG_ID;
 /*
  * IMPORTANT: Please add _ALL_ WMI Commands Here.
@@ -2283,6 +2285,7 @@ typedef enum {
     OP(WMI_GET_AVG_TX_POWER_CMDID) \
     OP(WMI_GET_TX_POWER_CALLING_CMDID) \
     OP(WMI_ATHDIAG_READ_WRITE_CMDID) \
+    OP(WMI_RTT_PEER_MEAS_CAP_REQ_CMDID) \
     /* add new CMD_LIST elements above this line */
 
 
@@ -2663,6 +2666,7 @@ typedef enum {
     OP(WMI_ATHDIAG_READ_WRITE_EVENTID) \
     OP(WMI_PEER_MAPC_SETUP_STATUS_EVENTID) \
     OP(WMI_PEER_MAPC_GET_PARAMS_EVENTID) \
+    OP(WMI_RTT_PEER_MEAS_CAP_RSP_EVENTID) \
     /* add new EVT_LIST elements above this line */
 
 
@@ -6729,6 +6733,11 @@ WMITLV_CREATE_PARAM_STRUC(WMI_VDEV_GET_CHAN_HOP_STATUS_REPORT_CMDID);
         WMITLV_TAG_ARRAY_BYTE, A_UINT8, data, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_ATHDIAG_READ_WRITE_CMDID);
 
+/* RTT Peer measurement cap request */
+#define WMITLV_TABLE_WMI_RTT_PEER_MEAS_CAP_REQ_CMDID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_req_fixed_param, wmi_rtt_peer_meas_cap_req_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+WMITLV_CREATE_PARAM_STRUC(WMI_RTT_PEER_MEAS_CAP_REQ_CMDID);
+
 
 
 /************************** TLV definitions of WMI events *******************************/
@@ -9202,7 +9211,9 @@ WMITLV_CREATE_PARAM_STRUC(WMI_GET_CHIPSET_LOGGING_STATS_EVENTID);
 /* RTT Peer measurement report event */
 #define WMITLV_TABLE_WMI_RTT_PEER_MEAS_REPORT_EVENTID(id,op,buf,len) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_rtt_peer_meas_report_event_fixed_param, wmi_rtt_peer_meas_report_event_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
-    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_rtt_peer_meas_report_peer_meas_result_info, peer_meas_result_info, WMITLV_SIZE_VAR)
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_rtt_peer_meas_report_peer_meas_result_info, peer_meas_result_info, WMITLV_SIZE_VAR) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_BYTE, A_UINT8, lci_ie_data, WMITLV_SIZE_VAR) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_BYTE, A_UINT8, loc_civic_ie_data, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_RTT_PEER_MEAS_REPORT_EVENTID);
 
 #define WMITLV_TABLE_WMI_VDEV_CHAN_HOP_STATUS_REPORT_EVENTID(id,op,buf,len) \
@@ -9218,6 +9229,12 @@ WMITLV_CREATE_PARAM_STRUC(WMI_VDEV_CHAN_HOP_STATUS_REPORT_EVENTID);
     WMITLV_ELEM(id, op, buf, len, \
         WMITLV_TAG_ARRAY_BYTE, A_UINT8, data, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_ATHDIAG_READ_WRITE_EVENTID);
+
+/* RTT Peer measurement cap rsp event */
+#define WMITLV_TABLE_WMI_RTT_PEER_MEAS_CAP_RSP_EVENTID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_rsp_fixed_param, wmi_rtt_peer_meas_cap_rsp_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_rtt_peer_meas_capabilities, wmi_rtt_peer_meas_capabilities, rtt_cap, WMITLV_SIZE_FIX)
+WMITLV_CREATE_PARAM_STRUC(WMI_RTT_PEER_MEAS_CAP_RSP_EVENTID);
 
 
 #ifdef __cplusplus

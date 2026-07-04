@@ -1219,6 +1219,8 @@ typedef enum {
     WMI_RTT_PEER_MEAS_REQ_CMDID,
     /** request to cancel an ongoing peer measurement */
     WMI_RTT_PEER_MEAS_CANCEL_CMDID,
+    /** request to get RTT capabilities - used by LOWI clients */
+    WMI_RTT_PEER_MEAS_CAP_REQ_CMDID,
 
     /** spectral scan command */
     /** configure spectral scan */
@@ -2424,8 +2426,10 @@ typedef enum {
     WMI_RTT_PASN_PEER_DELETE_EVENTID,
     /** RTT peer (Proximity Detection) measurement report */
     WMI_RTT_PEER_MEAS_REPORT_EVENTID,
+    /** RTT capabilities response - for LOWI clients */
+    WMI_RTT_PEER_MEAS_CAP_RSP_EVENTID,
 
-    /*STATS specific events*/
+    /* STATS specific events*/
     /** txrx stats event requested by host */
     WMI_STATS_EXT_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_STATS),
     /** FW iface link stats Event  */
@@ -44138,6 +44142,7 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_GET_AVG_TX_POWER_CMDID);
         WMI_RETURN_STRING(WMI_GET_TX_POWER_CALLING_CMDID);
         WMI_RETURN_STRING(WMI_ATHDIAG_READ_WRITE_CMDID);
+        WMI_RETURN_STRING(WMI_RTT_PEER_MEAS_CAP_REQ_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
@@ -58065,6 +58070,14 @@ typedef struct {
 #define WMI_RTT_PEER_MEAS_REQ_AW_SUB_ELEM_AW_DURATION_GET(elem)  WMI_GET_BITS(elem, 24, 8)
 #define WMI_RTT_PEER_MEAS_REQ_AW_SUB_ELEM_AW_DURATION_SET(elem, value) WMI_SET_BITS(elem, 24, 8, value)
 
+#define WMI_RTT_PEER_MEAS_REQ_PARAMS_VDEV_TYPE_VALID_GET(elem)  WMI_GET_BITS(elem, 0, 1)
+#define WMI_RTT_PEER_MEAS_REQ_PARAMS_VDEV_TYPE_VALID_SET(elem, value) WMI_SET_BITS(elem, 0, 1, value)
+#define WMI_RTT_PEER_MEAS_REQ_PARAMS_VDEV_TYPE_GET(elem)  WMI_GET_BITS(elem, 1, 4)
+#define WMI_RTT_PEER_MEAS_REQ_PARAMS_VDEV_TYPE_SET(elem, value) WMI_SET_BITS(elem, 1, 4, value)
+#define WMI_RTT_PEER_MEAS_REQ_PARAMS_TX_BW_VALID_GET(elem)  WMI_GET_BITS(elem, 5, 1)
+#define WMI_RTT_PEER_MEAS_REQ_PARAMS_TX_BW_VALID_SET(elem, value) WMI_SET_BITS(elem, 5, 1, value)
+#define WMI_RTT_PEER_MEAS_REQ_PARAMS_TX_BW_GET(elem)  WMI_GET_BITS(elem, 6, 4)
+#define WMI_RTT_PEER_MEAS_REQ_PARAMS_TX_BW_SET(elem, value) WMI_SET_BITS(elem, 6, 4, value)
 
 typedef struct {
     /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_rtt_peer_meas_req_peer_info */
@@ -58115,6 +58128,18 @@ typedef struct {
      * Bits 31-24 : aw_duration (in unit of 1 ms)
      */
     A_UINT32 availibility_sub_elem;
+    /**
+     * Params
+     * Bit    0   : vdev_type_valid
+     * Bits 4-1   : vdev_type (Vdev to be used for ranging),
+     *              ignored unless vdev_type_valid == 1
+     * Bit    5   : tx_bw_valid
+     * Bits 9-6   : tx_bw: tx BW for TM/NDP frames,
+     *              encoded per enum wmi_channel_width,
+     *              ignored unless tx_bw_valid == 1
+     * Bits 31-10 : reserved
+     */
+    A_UINT32 params;
 } wmi_rtt_peer_meas_req_peer_info;
 
 typedef struct {
@@ -58293,6 +58318,12 @@ typedef struct {
         A_INT32  rssi_spread_db;
     } rssi;
 
+    /*
+     * Explicit 4-byte pad to show / enforce that the following
+     * A_INT64 unions start at an 8-byte offset within the struct.
+     */
+    A_UINT32 reserved_pad;
+
     /** RTT statistics (units: picoseconds) */
     struct {
         union {
@@ -58385,6 +58416,20 @@ typedef struct {
     /** bits 31:0: TX/RX Bit rate in 100kbps */
     A_UINT32 tx_rate_info_2;
     A_UINT32 rx_rate_info_2;
+
+    /**
+     * Length in bytes of this peer's LCI IE contributed to the
+     * lci_ie_data[] TLV that follows the peer_meas_result_info[] array.
+     * 0 if no LCI IE is present for this peer.
+     */
+    A_UINT32 lci_ie_len;
+
+    /**
+     * Length in bytes of this peer's Location Civic IE contributed to
+     * the loc_civic_ie_data[] TLV that follows the peer_meas_result_info[]
+     * array.  0 if no Location Civic IE is present for this peer.
+     */
+    A_UINT32 loc_civic_ie_len;
 } wmi_rtt_peer_meas_report_peer_meas_result_info;
 
 typedef struct {
@@ -58395,8 +58440,30 @@ typedef struct {
     /**
      * This fixed param TLV will be followed by the below TLVs
      *   - wmi_rtt_peer_meas_report_peer_meas_result_info peer_meas_info[]
+     *   - A_UINT8 lci_ie_data[]       (concatenated LCI IEs for all peers;
+     *                                  use lci_ie_len per peer to slice)
+     *   - A_UINT8 loc_civic_ie_data[] (concatenated Location Civic IEs for
+     *                                  all peers; use loc_civic_ie_len per
+     *                                  peer to slice)
      */
 } wmi_rtt_peer_meas_report_event_fixed_param;
+
+typedef struct {
+    /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_req_fixed_param */
+    A_UINT32 tlv_header;
+} wmi_rtt_peer_meas_cap_req_fixed_param;
+
+typedef struct {
+    /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_rsp_fixed_param */
+    A_UINT32 tlv_header;
+    /*
+     * This fixed_param TLV is followed by a separate top-level TLV:
+     *   - wmi_rtt_peer_meas_capabilities rtt_cap
+     * It is a sibling TLV (NOT nested) so that both structs can be extended
+     * independently in the future without shifting each other's field offsets.
+     * The WMI TLV parser is flat and does not support TLV-in-TLV recursion.
+     */
+} wmi_rtt_peer_meas_cap_rsp_fixed_param;
 
 typedef struct {
     /** TLV tag and len; tag equals
