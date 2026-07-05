@@ -25994,7 +25994,9 @@ typedef struct {
 #define WMI_ROAM_OFFLOAD_FLAG_OKC_ENABLED       0   /* okc is enabled */
 #define WMI_ROAM_OFFLOAD_FLAG_PMK_CACHE_DISABLED 1  /* pmk caching is disabled */
 #define WMI_ROAM_OFFLOAD_FLAG_SAE_SAME_PMKID 2      /* Use same PMKID for WPA3 SAE roaming */
-/* from bit 3 to bit 31 are reserved */
+/* host supplicant OKC supported; FW skips PMK match-delete */
+#define WMI_ROAM_OFFLOAD_FLAG_USER_OKC_CACHE_SUPPORT 3
+/* from bit 4 to bit 31 are reserved */
 
 #define WMI_SET_ROAM_OFFLOAD_OKC_ENABLED(flag) do { \
         (flag) |=  (1 << WMI_ROAM_OFFLOAD_FLAG_OKC_ENABLED);      \
@@ -26021,6 +26023,13 @@ typedef struct {
 #define WMI_GET_ROAM_OFFLOAD_PMK_CACHE_DISABLED(flag) \
     ((flag) & (1 << WMI_ROAM_OFFLOAD_FLAG_PMK_CACHE_DISABLED))
 
+#define WMI_SET_ROAM_OFFLOAD_USER_OKC_CACHE_SUPPORT(flag) \
+    do { \
+        (flag) |= (1 << WMI_ROAM_OFFLOAD_FLAG_USER_OKC_CACHE_SUPPORT); \
+    } while (0)
+
+#define WMI_GET_ROAM_OFFLOAD_USER_OKC_CACHE_SUPPORT(flag) \
+    ((flag) & (1 << WMI_ROAM_OFFLOAD_FLAG_USER_OKC_CACHE_SUPPORT))
 
 /* This TLV will be filled only in case of wpa-psk/wpa2-psk/wpa3 */
 typedef struct {
