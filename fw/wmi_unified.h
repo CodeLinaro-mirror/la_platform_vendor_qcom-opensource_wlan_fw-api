@@ -21019,6 +21019,13 @@ typedef enum {
      */
     WMI_VDEV_PARAM_RTT_11AZ_FTM_RSP_CONFIG,               /* 0xD4 */
 
+    /*
+     * Disable OUI BPCC-triggered WOW wakeup per vdev session.
+     *      0 - Enable WOW wakeup on BPCC change
+     *      1 - Disable WOW wakeup on BPCC change
+     */
+    WMI_VDEV_PARAM_DISABLE_OUI_BPCC_WOW_WAKE,             /* 0xD5 */
+
 
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
