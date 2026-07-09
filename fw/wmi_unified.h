@@ -37130,8 +37130,10 @@ typedef enum {
 } wmi_tsf_tstamp_action;
 
 typedef enum {
-    TSF_TSTAMP_REPORT_TTIMER = 0x1, /* bit 0: TSF Timer */
-    TSF_TSTAMP_REPORT_QTIMER = 0x2, /* bit 1: H/T common Timer */
+    TSF_TSTAMP_REPORT_TTIMER    = 0x1, /* bit 0: TSF Timer */
+    TSF_TSTAMP_REPORT_QTIMER    = 0x2, /* bit 1: H/T common Timer */
+    TSF_TSTAMP_GPIO_TOGGLE_HIGH = 0x4, /* bit 2: GPIO TOGGLE HIGH Indication */
+    TSF_TSTAMP_GPIO_TOGGLE_LOW  = 0x8, /* bit 3: GPIO TOGGLE LOW Indication */
 } wmi_tsf_tstamp_report_flags;
 
 #define TSF_TSTAMP_REPORT_PERIOD_MIN   1000    /* ms units */
