@@ -1405,6 +1405,15 @@ typedef struct {
      * correspond to the default UDP msduq.
      */
     A_UINT32 msduq_bitmap;
+
+    /* Aggregate MSDUQ counts for the last monitor cycle for this TID.
+     * enqueue_count: total MSDUs enqueued across all MSDUQs for this TID
+     * dequeue_count: total MSDUs successfully sent
+     * drop_count   : total MSDUs dropped
+     */
+    A_UINT32 enqueue_count;
+    A_UINT32 dequeue_count;
+    A_UINT32 drop_count;
 } htt_ppdu_stats_user_common_tlv;
 
 #define HTT_PPDU_STATS_USER_RATE_TLV_TID_NUM_M     0x000000ff
