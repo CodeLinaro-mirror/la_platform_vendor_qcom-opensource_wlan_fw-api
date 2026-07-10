@@ -1441,6 +1441,15 @@ typedef enum {
     /** WMI command to get scan cached result */
     WMI_GET_SCAN_CACHE_RESULT_CMDID,
 
+    WMI_SET_MODIFY_TX_PLIM_CMDID,
+
+    WMI_GET_AVG_TX_POWER_CMDID,
+
+    WMI_GET_TX_POWER_CALLING_CMDID,
+
+    /** WMI command for athdiag memory/register read or write */
+    WMI_ATHDIAG_READ_WRITE_CMDID,
+
 
     /*  Offload 11k related requests */
     WMI_11K_OFFLOAD_REPORT_CMDID = WMI_CMD_GRP_START_ID(WMI_GRP_11K_OFFLOAD),
@@ -1579,7 +1588,26 @@ typedef enum {
      * negotiation etc.).
      */
     WMI_NAN_PEER_PARAMS_CMDID,
-
+    /**
+     * Command to request for NAN service discovery operations i.e.
+     * Publish, Subscribe, Followup to be handled by FW.
+     * This command carries the full NAN function parameters equivalent
+     * to NL80211_CMD_ADD_NAN_FUNCTION / cfg80211_nan_func, including
+     * service ID, SRF filters, match filters, SDEA control, security
+     * (cipher suites, ND-PMK), and NAN3 pairing configuration.
+     */
+    WMI_NAN_DISC_SERVICE_REQ_CMDID,
+    /**
+     * Command to cancel an active NAN discovery service request
+     * (Publish or Subscribe).
+     * Equivalent of NL80211_CMD_DEL_NAN_FUNCTION in the cfg80211
+     * offload interface.
+     * Host identifies the service request by instance_id (offload path)
+     * or cookie (standard path); FW frees the service request and sends
+     * WMI_NAN_DISC_SERVICE_REQ_TERMINATED_EVENTID if the service request
+     * was active.
+     */
+    WMI_NAN_DISC_CANCEL_SERVICE_REQ_CMDID,
 
     /** Modem power state command */
     WMI_MODEM_POWER_STATE_CMDID = WMI_CMD_GRP_START_ID(WMI_GRP_COEX),
@@ -2627,6 +2655,15 @@ typedef enum {
     /** WMI event for FW diagnostic data sent to host */
     WMI_OPT_DP_DIAG_EVENTID,
 
+    WMI_MODIFY_TX_PLIM_EVENTID,
+
+    WMI_AVG_TX_POWER_EVENTID,
+
+    WMI_PLIMIT_TABLE_EVENTID,
+
+    /** WMI event to deliver athdiag read data or write completion status */
+    WMI_ATHDIAG_READ_WRITE_EVENTID,
+
 
     /* GPIO Event */
     WMI_GPIO_INPUT_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_GPIO),
@@ -2699,6 +2736,29 @@ typedef enum {
     WMI_NDP_CHANNEL_INFO_EVENTID,
     /* Event to indicate availability of STA AP connection on DFS channel */
     WMI_NAN_DFS_CHANNEL_AVAILABILITY_IND_EVENTID,
+    /**
+     * Event response to NAN discovery service request command
+     * (WMI_NAN_DISC_SERVICE_REQ_CMDID);
+     * carries the instance_id assigned by FW and a status code indicating
+     * whether the Publish / Subscribe service request was accepted
+     */
+    WMI_NAN_DISC_SERVICE_RSP_EVENTID,
+    /**
+     * NAN discovery match event; covers two match scenarios:
+     * subscriber found publisher (type=PUBLISH), publisher received subscribe
+     * (type=SUBSCRIBE).
+     * Equivalent of NL80211_CMD_NAN_MATCH in the cfg80211
+     * offload interface.
+     */
+    WMI_NAN_DISC_MATCH_EVENTID,
+    /**
+     * NAN discovery service request terminated event; sent when a Publish or
+     * Subscribe service request is cancelled by the host, expires (TTL), or is
+     * terminated by FW due to an error.
+     * Equivalent of NL80211_CMD_DEL_NAN_FUNCTION (EVENT: terminated)
+     * in the cfg80211 offload interface.
+     */
+    WMI_NAN_DISC_SERVICE_REQ_TERMINATED_EVENTID,
 
     /* Coex Event */
     WMI_COEX_REPORT_ANTENNA_ISOLATION_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_COEX),
@@ -5469,8 +5529,21 @@ typedef struct {
      *      Refer to the below definitions of
      *      WMI_RSRC_CFG_HOST_SERVICE_FLAG_SMD_BSS_TRANSITION_GET and _SET
      *      macros.
+     *  Bit 26
+     *      This bit will be set by host to inform FW that the rx management
+     *      path directly to the host is enabled, so the FW need not forward
+     *      rx mgmt frames to the host.
+     *      Refer to the below definitions of
+     *      WMI_RSRC_CFG_HOST_SERVICE_FLAG_HOST_RX_MGMT_DIRECT_ENABLE_GET and
+     *      _SET macros.
+     *  Bit 27
+     *     This bit will be set by host to inform FW that the CUMAC_CMD_ID
+     *     will come post WMI_INIT_CMDID and the MLO_SRNG setup has to be
+     *     done as part of this cmd.
+     *     Refer to the below definitions of
+     *     WMI_RSRC_CFG_HOST_SERVICE_FLAG_CUMAC_CMD_SUPPORT_GET and SET_macros.
      *
-     *  Bits 31:26 - Reserved
+     *  Bits 31:28 - Reserved
      */
     A_UINT32 host_service_flags;
 
@@ -5624,7 +5697,11 @@ typedef struct {
         struct {
             A_UINT32
                 dw_notif_lead_time: 8,
-                reserved2: 24;
+                /* enable supplicant based NAN offload mode */
+                enable_nan_ofld_mode: 1,
+                /* disable/enable temporal IOT mode */
+                enable_temporal_iot_mode: 1,
+                reserved2: 22;
         };
     };
 } wmi_resource_config;
@@ -5635,9 +5712,40 @@ typedef struct {
     WMI_SET_BITS(word32, 0, 1, value)
 
 #define WMI_RSRC_CFG_NAN_CONFIG_DW_NOTIF_LEAD_TIME_GET(word32) \
-        WMI_GET_BITS(word32, 0, 8)
+    WMI_GET_BITS(word32, 0, 8)
 #define WMI_RSRC_CFG_NAN_CONFIG_DW_NOTIF_LEAD_TIME_SET(word32, value) \
-        WMI_SET_BITS(word32, 0, 8, value)
+    WMI_SET_BITS(word32, 0, 8, value)
+
+#define WMI_RSRC_CFG_NAN_CONFIG_ENABLE_NAN_OFLD_MODE_GET(word32) \
+    WMI_GET_BITS(word32, 8, 1)
+#define WMI_RSRC_CFG_NAN_CONFIG_ENABLE_NAN_OFLD_MODE_SET(word32, value) \
+    WMI_SET_BITS(word32, 8, 1, value)
+
+#define WMI_RSRC_CFG_NAN_CONFIG_ENABLE_NAN_TEMPORAL_IOT_MODE_GET(word32) \
+    WMI_GET_BITS(word32, 9, 1)
+#define WMI_RSRC_CFG_NAN_CONFIG_ENABLE_NAN_TEMPORAL_IOT_MODE_SET(word32, value) \
+    WMI_SET_BITS(word32, 9, 1, value)
+
+
+/*
+ * WMI_NAN_DISC_COOKIE_GET / WMI_NAN_DISC_COOKIE_SET
+ *
+ * Accessor macros for the 64-bit cookie value split across
+ * cookie_low32 and cookie_high32 fields in WMI NAN disc structs.
+ *
+ * Usage (read):
+ *   A_UINT64 c = WMI_NAN_DISC_COOKIE_GET(p->cookie_low32, p->cookie_high32);
+ *
+ * Usage (write):
+ *   WMI_NAN_DISC_COOKIE_SET(p->cookie_low32, p->cookie_high32, my_cookie);
+ */
+#define WMI_NAN_DISC_COOKIE_GET(low32, high32) \
+    (((A_UINT64)(high32) << 32) | (A_UINT64)(low32))
+#define WMI_NAN_DISC_COOKIE_SET(low32, high32, cookie64) \
+    do { \
+        (low32)  = (A_UINT32)((cookie64) & 0xFFFFFFFFUL); \
+        (high32) = (A_UINT32)(((cookie64) >> 32) & 0xFFFFFFFFUL); \
+    } while (0)
 
 #define WMI_MSDU_FLOW_AST_ENABLE_GET(msdu_flow_config0, ast_x) \
     (((ast_x) == 0) ? 1 : ((msdu_flow_config0) & (1 << ((ast_x) - 1))))
@@ -6103,6 +6211,24 @@ typedef struct {
     WMI_GET_BITS(host_service_flags, 25, 1)
 #define WMI_RSRC_CFG_HOST_SERVICE_FLAG_SMD_BSS_TRANSITION_SET(host_service_flags, value) \
     WMI_SET_BITS(host_service_flags, 25, 1, value)
+
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_HOST_RX_MGMT_DIRECT_ENABLE_GET(host_service_flags) \
+    WMI_GET_BITS(host_service_flags, 26, 1)
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_HOST_RX_MGMT_DIRECT_ENABLE_SET(host_service_flags, value) \
+    WMI_SET_BITS(host_service_flags, 26, 1, value)
+
+/*
+ * Bit 27: Host supports WMI_PDEV_SET_CUMAC_CHIP_CMDID.
+ * When set, FW will call the MLO CUMAC init function from the
+ * WMI_PDEV_SET_CUMAC_CHIP_CMDID handler instead of the MLO SoC init function.
+ * Requires WMI_SERVICE_PDEV_SET_CUMAC_CHIP_CMD_SUPPORT to be set in
+ * wmi_service_ready before the host sets this bit.
+ */
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_CUMAC_CMD_SUPPORT_GET(host_service_flags) \
+    WMI_GET_BITS(host_service_flags, 27, 1)
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_CUMAC_CMD_SUPPORT_SET(host_service_flags, val) \
+    WMI_SET_BITS(host_service_flags, 27, 1, val)
+
 
 #define WMI_RSRC_CFG_CARRIER_CFG_CHARTER_ENABLE_GET(carrier_config) \
     WMI_GET_BITS(carrier_config, 0, 1)
@@ -10839,6 +10965,22 @@ typedef enum {
 #define WMI_PDEV_RATE_MIN_NSS_PROBE_INTERVAL_SET(_value, value) WMI_SET_BITS(_value, 0, 16, value)
 #define WMI_PDEV_RATE_MAX_NSS_PROBE_INTERVAL_GET(value) WMI_GET_BITS(value, 16, 16)
 #define WMI_PDEV_RATE_MAX_NSS_PROBE_INTERVAL_SET(_value, value) WMI_SET_BITS(_value, 16, 16, value)
+
+/* WMI GET/SET macros for WMI_PDEV_PARAM_SMART_ANTENNA_CONFIG_MPDU_MCS_PARAMS */
+#define WMI_PDEV_SMART_ANT_MPDU_MCS_PARAMS_MAX_TRAIN_MPDU_GET(param) \
+    WMI_GET_BITS(param, 0, 10)
+#define WMI_PDEV_SMART_ANT_MPDU_MCS_PARAMS_MAX_TRAIN_MPDU_SET(_param, value) \
+    WMI_SET_BITS(_param, 0, 10, value)
+
+#define WMI_PDEV_SMART_ANT_MPDU_MCS_PARAMS_MCS_MARGIN_EN_GET(param) \
+    WMI_GET_BITS(param, 10, 1)
+#define WMI_PDEV_SMART_ANT_MPDU_MCS_PARAMS_MCS_MARGIN_EN_SET(_param, value) \
+    WMI_SET_BITS(_param, 10, 1, value)
+
+#define WMI_PDEV_SMART_ANT_MPDU_MCS_PARAMS_MCS_MARGIN_VAL_GET(param) \
+    WMI_GET_BITS(param, 11, 3)
+#define WMI_PDEV_SMART_ANT_MPDU_MCS_PARAMS_MCS_MARGIN_VAL_SET(_param, value) \
+    WMI_SET_BITS(_param, 11, 3, value)
 
 #define WMI_MBSSID_CTRL_FRAME_BASIC_TRIGGER ((A_UINT32) 1 << 0)
 #define WMI_MBSSID_CTRL_FRAME_BSR_TRIGGER ((A_UINT32) 1 << 1)
@@ -23210,6 +23352,8 @@ typedef struct {
 #define WMI_PEER_EXT_IS_MESH_NODE       0x00000020 /* Indicates if the peer connecting is a mesh node */
 #define WMI_PEER_EXT_PROTECTED_TWT      0x00000040 /* Protected TWT operation Support field in Extended RSN Capabilities element */
 #define WMI_PEER_EXT_UHR                0x00000080 /* UHR enabled */
+#define WMI_PEER_EXT_2XLDPC             0x00000100 /* Peer supports 2x LDPC (3888-bit codeword) */
+
 #define WMI_PEER_EXT_F_CRIT_PROTO_HINT_ENABLED 0x40000000
 #define WMI_PEER_EXT_SMD_ASSOC          0x80000000
 
@@ -27898,6 +28042,22 @@ typedef struct {
     A_UINT32  req_type;
 } wmi_aggr_state_trig_event_fixed_param;
 
+/*
+ * WMI_KEY_FIPS_STATUS
+ *
+ * Reported to the host in WMI_VDEV_INSTALL_KEY_COMPLETE_EVENTID via
+ * bits[4:5] of key_flags. Use WMI_KEY_FLAGS_FIPS_COMPLIANT_GET/SET macros.
+ */
+typedef enum {
+    WMI_KEY_FIPS_NOT_APPROVED = 1,
+    WMI_KEY_FIPS_APPROVED     = 2,
+} WMI_KEY_FIPS_STATUS;
+
+#define WMI_KEY_FLAGS_FIPS_COMPLIANT_GET(key_flags) \
+    WMI_GET_BITS(key_flags, 4, 2)
+#define WMI_KEY_FLAGS_FIPS_COMPLIANT_SET(key_flags, val) \
+    WMI_SET_BITS(key_flags, 4, 2, val)
+
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_install_key_complete_event_fixed_param */
     /** unique id identifying the VDEV, generated by the caller */
@@ -27906,7 +28066,19 @@ typedef struct {
     wmi_mac_addr peer_macaddr;
     /** key index */
     A_UINT32 key_ix;
-    /** key flags */
+    /** key flags — bit definitions (see KEY_USAGE enum in wmi.h):
+     *  bit[0]:    key usage type
+     *             0 = PAIRWISE_USAGE — unicast/pairwise key
+     *             1 = GROUP_USAGE    — broadcast/multicast group key
+     *  bit[1]:    TX_USAGE (0x02) — default Tx key (static WEP only)
+     *  bit[2]:    PMK_USAGE (0x04) — PMK cache entry
+     *  bit[3]:    LTF_USAGE (0x08) — LTF key seed
+     *  bits[4:5]: FIPS compliance status (WMI_KEY_FIPS_STATUS enum)
+     *             1 = WMI_KEY_FIPS_NOT_APPROVED (WEP, TKIP, WAPI)
+     *             2 = WMI_KEY_FIPS_APPROVED     (AES-CCM/GCM/CMAC/GMAC)
+     *             Use WMI_KEY_FLAGS_FIPS_COMPLIANT_GET/SET to access.
+     *  bits[6:31]: reserved
+     */
     A_UINT32 key_flags;
     /** Event status */
     A_UINT32 status;
@@ -32542,6 +32714,244 @@ typedef struct {
  */
 } wmi_nan_peer_params_cmd_fixed_param;
 
+/*
+ * NAN service request type values for
+ * wmi_nan_disc_service_req_cmd_fixed_param.service_req_type.
+ * Maps to NL80211_NAN_FUNC_PUBLISH / SUBSCRIBE / FOLLOW_UP.
+ */
+typedef enum {
+    WMI_NAN_DISC_SERVICE_REQ_PUBLISH    = 1,
+    WMI_NAN_DISC_SERVICE_REQ_SUBSCRIBE  = 2,
+    WMI_NAN_DISC_SERVICE_REQ_FOLLOW_UP  = 3,
+} WMI_NAN_DISC_SERVICE_REQ_TYPE;
+
+/*
+ * Publish type values for
+ * wmi_nan_disc_service_req_cmd_fixed_param.publish_type.
+ * Valid only when service_req_type == WMI_NAN_DISC_SERVICE_REQ_PUBLISH.
+ * Maps to NL80211_NAN_FUNC_PUBLISH_TYPE.
+ */
+typedef enum {
+    WMI_NAN_DISC_PUBLISH_UNSOLICITED           = 0,
+    WMI_NAN_DISC_PUBLISH_SOLICITED             = 1,
+    WMI_NAN_DISC_PUBLISH_UNSOLICITED_SOLICITED = 2,
+} WMI_NAN_DISC_PUBLISH_TYPE;
+
+/*
+ * NAN discovery service request termination reason values for
+ * wmi_nan_disc_service_req_terminated_event_fixed_param.reason.
+ * Maps to nl80211_nan_func_term_reason.
+ */
+typedef enum {
+    /**
+     * Service request was cancelled by an explicit host request
+     * (WMI_NAN_DISC_CANCEL_SERVICE_REQ_CMDID).
+     * Maps to NL80211_NAN_FUNC_TERM_REASON_USER_REQUEST = 0
+     */
+    WMI_NAN_DISC_SERVICE_REQ_TERM_REASON_USER_REQUEST = 0,
+    /**
+     * Service request lifetime (TTL) elapsed;
+     * FW auto-expired the service request.
+     * Maps to NL80211_NAN_FUNC_TERM_REASON_TTL_EXPIRED = 1
+     */
+    WMI_NAN_DISC_SERVICE_REQ_TERM_REASON_TTL_EXPIRED = 1,
+    /**
+     * FW encountered an internal error and could not maintain
+     * the service request.
+     * Also covers NAN_TERMINATED_REASON_COUNT_REACHED from the HAL path.
+     * Maps to NL80211_NAN_FUNC_TERM_REASON_ERROR = 2
+     */
+    WMI_NAN_DISC_SERVICE_REQ_TERM_REASON_ERROR = 2,
+} WMI_NAN_DISC_SERVICE_REQ_TERM_REASON;
+
+/*
+ * SDEA (Service Descriptor Extension Attribute) control field bit accessors.
+ * Maps to NL80211_ATTR_NAN_FUNC_SDEA_CTRL / cfg80211_nan_func.sdea_ctrl.
+ *   Bit 2 : Data Path Required
+ *   Bit 6 : Security Required
+ */
+#define WMI_NAN_DISC_SDEA_CTRL_GET_DATA_PATH_REQ(sdea) \
+    WMI_GET_BITS(sdea, 2, 1)
+#define WMI_NAN_DISC_SDEA_CTRL_SET_DATA_PATH_REQ(sdea, v) \
+    WMI_SET_BITS(sdea, 2, 1, v)
+#define WMI_NAN_DISC_SDEA_CTRL_GET_SECURITY_REQ(sdea) \
+    WMI_GET_BITS(sdea, 6, 1)
+#define WMI_NAN_DISC_SDEA_CTRL_SET_SECURITY_REQ(sdea, v) \
+    WMI_SET_BITS(sdea, 6, 1, v)
+
+/*
+ * service_req_flags field bit accessors for
+ * wmi_nan_disc_service_req_cmd_fixed_param.service_req_flags.
+ * Packs all boolean cfg80211_nan_func fields into one A_UINT32.
+ *
+ *   Bit 0 : close_range      — match only with close-range peers
+ *                              (NL80211_ATTR_NAN_FUNC_CLOSE_RANGE)
+ *   Bit 1 : publish_bcast    — send in broadcast discovery beacons;
+ *                              valid only for Publish
+ *                              (NL80211_ATTR_NAN_FUNC_PUBLISH_BCAST)
+ *   Bit 2 : subscribe_active — send active subscribe queries;
+ *                              valid only for Subscribe
+ *                              (NL80211_ATTR_NAN_FUNC_SUBSCRIBE_ACTIVE)
+ *   Bit 3 : gtk_required     — group temporal key required for
+ *                              multicast data
+ *                              (NL80211_ATTR_NAN_FUNC_GTK_REQUIRED)
+ *   Bit 4 : pairing_setup    — enable initial NAN3 pairing setup
+ *                              (NL80211_ATTR_NAN_FUNC_PAIRING_SETUP)
+ *   Bit 5 : pairing_cache    — enable persistent NAN3 pairing cache
+ *                              (NL80211_ATTR_NAN_FUNC_PAIRING_CACHE)
+ *   Bit 6 : pairing_verify   — enable NAN3 pairing re-verification
+ *                              (NL80211_ATTR_NAN_FUNC_PAIRING_VERIFY)
+ *   Bit 7 : nd_pmk_valid     — nd_pmk TLV is populated and valid
+ *                              (NL80211_ATTR_NAN_FUNC_ND_PMK)
+ *   Bits 8-31 : reserved, must be set to 0
+ */
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_GET_CLOSE_RANGE(f) \
+    WMI_GET_BITS(f, 0, 1)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_SET_CLOSE_RANGE(f, v) \
+    WMI_SET_BITS(f, 0, 1, v)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_GET_PUBLISH_BCAST(f) \
+    WMI_GET_BITS(f, 1, 1)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_SET_PUBLISH_BCAST(f, v) \
+    WMI_SET_BITS(f, 1, 1, v)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_GET_SUBSCRIBE_ACTIVE(f) \
+    WMI_GET_BITS(f, 2, 1)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_SET_SUBSCRIBE_ACTIVE(f, v) \
+    WMI_SET_BITS(f, 2, 1, v)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_GET_GTK_REQUIRED(f) \
+    WMI_GET_BITS(f, 3, 1)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_SET_GTK_REQUIRED(f, v) \
+    WMI_SET_BITS(f, 3, 1, v)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_GET_PAIRING_SETUP(f) \
+    WMI_GET_BITS(f, 4, 1)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_SET_PAIRING_SETUP(f, v) \
+    WMI_SET_BITS(f, 4, 1, v)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_GET_PAIRING_CACHE(f) \
+    WMI_GET_BITS(f, 5, 1)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_SET_PAIRING_CACHE(f, v) \
+    WMI_SET_BITS(f, 5, 1, v)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_GET_PAIRING_VERIFY(f) \
+    WMI_GET_BITS(f, 6, 1)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_SET_PAIRING_VERIFY(f, v) \
+    WMI_SET_BITS(f, 6, 1, v)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_GET_ND_PMK_VALID(f) \
+    WMI_GET_BITS(f, 7, 1)
+#define WMI_NAN_DISC_SERVICE_REQ_FLAGS_SET_ND_PMK_VALID(f, v) \
+    WMI_SET_BITS(f, 7, 1, v)
+
+/**
+ * WMI command to add a NAN discovery function
+ * (Publish / Subscribe / Follow-up).
+ * WMI equivalent of NL80211_CMD_ADD_NAN_FUNCTION / cfg80211_nan_func.
+ */
+typedef struct {
+    /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_nan_disc_service_req_cmd_fixed_param */
+    A_UINT32 tlv_header;
+    /** Unique id identifying the NMI VDEV */
+    A_UINT32 vdev_id;
+    /**
+     * NAN service request type:
+     * 1=Publish, 2=Subscribe, 3=Follow-up;
+     * refer to WMI_NAN_DISC_SERVICE_REQ_TYPE
+     */
+    A_UINT32 service_req_type;
+    /**
+     * Unique cookie assigned by cfg80211 for this function.
+     *  Split into two A_UINT32 words for endian portability.
+     *  Use WMI_NAN_DISC_COOKIE_GET/SET macros to access as A_UINT64.
+     */
+    A_UINT32 cookie_low32;  /* lower 32 bits of 64-bit cookie value */
+    A_UINT32 cookie_high32; /* upper 32 bits of 64-bit cookie value */
+    /**
+     * Function lifetime in Discovery Windows;
+     * 0 = active until explicitly deleted
+     */
+    A_UINT32 ttl;
+    /**
+     * Publish transmission mode;
+     * valid only when service_req_type == WMI_NAN_DISC_SERVICE_REQ_PUBLISH;
+     * refer to WMI_NAN_DISC_PUBLISH_TYPE
+     */
+    A_UINT32 publish_type;
+    /**
+     * Local function instance ID to which this follow-up is associated;
+     * valid only when service_req_type == WMI_NAN_DISC_SERVICE_REQ_FOLLOW_UP
+     */
+    A_UINT32 followup_instance_id;
+    /**
+     * Requestor instance ID from the prior match event;
+     * valid only when service_req_type == WMI_NAN_DISC_SERVICE_REQ_FOLLOW_UP
+     */
+    A_UINT32 followup_requestor_id;
+    /**
+     * NMI MAC address of the peer to send the follow-up to;
+     * valid only when service_req_type == WMI_NAN_DISC_SERVICE_REQ_FOLLOW_UP
+     */
+    wmi_mac_addr followup_dest;
+    /**
+     * SDEA control field bitmap; use WMI_NAN_DISC_SDEA_CTRL_GET/SET macros;
+     * bit2=Data Path Required, bit6=Security Required
+     */
+    A_UINT32 sdea_ctrl;
+    /**
+     * Bitmap of supported NAN3 pairing bootstrap methods;
+     * bit0=Opportunistic, bit1=PIN
+     */
+    A_UINT32 pairing_bootstrap_methods;
+    /**
+     * Bloom filter index for the SRF;
+     * valid only when TLV srf_bf[] is non-empty
+     */
+    A_UINT32 srf_bf_idx;
+    /**
+     * SRF filter mode:
+     * 0=exclude listed entries, 1=include only listed entries
+     */
+    A_UINT32 srf_include;
+    /**
+     * Packed boolean flags; use WMI_NAN_DISC_SERVICE_REQ_FLAGS_GET/SET macros;
+     *  bit0=close_range, bit1=publish_bcast, bit2=subscribe_active,
+     *  bit3=gtk_required, bit4=pairing_setup, bit5=pairing_cache,
+     *  bit6=pairing_verify, bit7=nd_pmk_valid, bits8-31=reserved
+     */
+    A_UINT32 service_req_flags;
+    /** Actual number of bytes in TLV serv_spec_info[]; max 255 */
+    A_UINT32 serv_spec_info_len;
+    /** Actual number of bytes in TLV srf_bf[] */
+    A_UINT32 srf_bf_len;
+    /** Actual number of bytes in TLV rx_match_filter[] */
+    A_UINT32 rx_match_filter_len;
+    /** Actual number of bytes in TLV tx_match_filter[] */
+    A_UINT32 tx_match_filter_len;
+    /** extra_nan_attrs_len:
+     * number of valid bytes (i.e. excluding final alignment-padding)
+     * in the TLV extra_nan_attrs[]
+     */
+    A_UINT32 extra_nan_attrs_len;
+    /**
+     * TLV (tag length value) parameters follow this structure:
+     * A_UINT8  service_id[];        6-byte NAN Service ID,
+     *                               zero-padded to 8 bytes
+     * A_UINT8  serv_spec_info[];    Service Specific Info, max 255 bytes
+     * A_UINT8  srf_bf[];            SRF Bloom filter data
+     * wmi_mac_addr srf_macs[];      SRF MAC address filter list
+     * A_UINT8  rx_match_filter[];   RX match filter byte stream
+     * A_UINT8  tx_match_filter[];   TX match filter byte stream
+     * A_UINT32 cipher_suites[];     NAN cipher suite ID array
+     * A_UINT8  nd_pmk[];            NAN Data Path PMK, 32 bytes;
+     *                               present only when bit7 of
+     *                               service_req_flags is set
+     * A_UINT8  extra_nan_attrs[];   extra NAN attrs like Device Cap,
+     *                               Shared Key Desc, CSIA cap etc.
+     *                               are sent in stream of bytes
+     *                               (ieee80211 protocol order).
+     *                               The host must manually byteswap
+     *                               these bytes within each 4-byte word
+     *                               if the host's endianness doesn’t
+     *                               match the target’s, to ensure the
+     *                               expected byte order is maintained.
+     */
+} wmi_nan_disc_service_req_cmd_fixed_param;
+
 typedef enum {
     WMI_NAN_STATUS_NO_NAN_AVAIL_DFS_CHANNEL_DETECTED  = 0x1,
     WMI_NAN_STATUS_NO_DFS_BEACONS_RECEIVED            = 0x2,
@@ -32675,6 +33085,213 @@ typedef struct {
     A_UINT32 status; /* Status code; 0 indicates NAN enable is success */
     A_UINT32 mac_id; /* MAC ID associated with NAN primary discovery channel */
 } wmi_nan_enable_rsp_event_fixed_param;
+
+/**
+ * WMI event response to WMI_NAN_DISC_SERVICE_REQ_CMDID.
+ * Sent by FW for each Publish / Subscribe / Follow-up function registration.
+ */
+typedef struct {
+    /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_nan_disc_service_rsp_event_fixed_param */
+    A_UINT32 tlv_header;
+    /** Unique id identifying the NMI VDEV */
+    A_UINT32 vdev_id;
+    /**
+     * Opaque cookie assigned by the driver; monotonically increasing per rdev.
+     *  Host must store this and include it in every subsequent match event
+     *  correlation. Equivalent of NL80211_ATTR_COOKIE in the CFG response.
+     *  Split into two A_UINT32 words for endian portability.
+     *  Use WMI_NAN_DISC_COOKIE_GET/SET macros to access as A_UINT64.
+     */
+    A_UINT32 cookie_low32;  /* lower 32 bits of 64-bit cookie value */
+    A_UINT32 cookie_high32; /* upper 32 bits of 64-bit cookie value */
+    /**
+     * FW/device-assigned service instance ID (1-255).
+     *  Used in SDF frames and match events.
+     *  Equivalent of NL80211_NAN_FUNC_INSTANCE_ID in the CFG response.
+     */
+    A_UINT32 instance_id;
+    /**
+     * NAN service request type of the registered service request;
+     * refer to WMI_NAN_DISC_SERVICE_REQ_TYPE:
+     *  1 = WMI_NAN_DISC_SERVICE_REQ_PUBLISH
+     *  2 = WMI_NAN_DISC_SERVICE_REQ_SUBSCRIBE
+     *  3 = WMI_NAN_DISC_SERVICE_REQ_FOLLOW_UP
+     */
+    A_UINT32 service_req_type;
+    /** Status code returned by FW: 0 = success, non-zero = failure */
+    A_UINT32 status;
+} wmi_nan_disc_service_rsp_event_fixed_param;
+
+/**
+ * WMI command to cancel an active NAN discovery service request.
+ * WMI equivalent of NL80211_CMD_DEL_NAN_FUNCTION / cfg80211 offload interface.
+ */
+typedef struct {
+    /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_nan_disc_cancel_service_req_cmd_fixed_param */
+    A_UINT32 tlv_header;
+    /** Unique id identifying the NMI VDEV */
+    A_UINT32 vdev_id;
+    /**
+     * NAN service request type being cancelled;
+     * refer to WMI_NAN_DISC_SERVICE_REQ_TYPE:
+     *  1 = WMI_NAN_DISC_SERVICE_REQ_PUBLISH
+     *  2 = WMI_NAN_DISC_SERVICE_REQ_SUBSCRIBE
+     */
+    A_UINT32 service_req_type;
+    /**
+     * Instance ID of the service request to cancel (offload path); range 1-255.
+     * FW resolves instance_id to the internal service request object.
+     * Equivalent of NL80211_NAN_FUNC_INSTANCE_ID in
+     * NL80211_CMD_DEL_NAN_FUNCTION
+     */
+    A_UINT32 instance_id;
+   /**
+     * Opaque cookie of the service request to cancel (standard path).
+     * Used when instance_id is not available;
+     * FW resolves cookie to service request.
+     * Equivalent of NL80211_ATTR_COOKIE in NL80211_CMD_DEL_NAN_FUNCTION.
+     * Set to 0 when instance_id is used instead.
+     * Split into two A_UINT32 words for endian portability.
+     * Use WMI_NAN_DISC_COOKIE_GET/SET macros to access as A_UINT64.
+     */
+    A_UINT32 cookie_low32;  /* lower 32 bits of 64-bit cookie value */
+    A_UINT32 cookie_high32; /* upper 32 bits of 64-bit cookie value */
+} wmi_nan_disc_cancel_service_req_cmd_fixed_param;
+
+/**
+ * WMI event indicating a NAN discovery service request has been terminated.
+ * WMI equivalent of NL80211_CMD_DEL_NAN_FUNCTION (EVENT: terminated).
+ * Sent by FW when a Publish or Subscribe service request is cancelled by the
+ * host, expires due to TTL, or is terminated by FW due to an error.
+ */
+typedef struct {
+    /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_nan_disc_service_req_terminated_event_fixed_param */
+    A_UINT32 tlv_header;
+    /** Unique id identifying the NMI VDEV */
+    A_UINT32 vdev_id;
+    /**
+     * Opaque cookie of the terminated service request; assigned by FW in
+     * WMI_NAN_DISC_SERVICE_RSP_EVENTID.
+     * Equivalent of NL80211_ATTR_COOKIE in the terminated event.
+     * Split into two A_UINT32 words for endian portability.
+     * Use WMI_NAN_DISC_COOKIE_GET/SET macros to access as A_UINT64.
+     */
+    A_UINT32 cookie_low32;  /* lower 32 bits of 64-bit cookie value */
+    A_UINT32 cookie_high32; /* upper 32 bits of 64-bit cookie value */
+    /**
+     * Instance ID of the terminated service request (1-255).
+     *  Equivalent of NL80211_NAN_FUNC_INSTANCE_ID in the terminated event
+     */
+    A_UINT32 instance_id;
+    /**
+     * NAN service request type that was terminated;
+     * refer to WMI_NAN_DISC_SERVICE_REQ_TYPE:
+     *  1 = WMI_NAN_DISC_SERVICE_REQ_PUBLISH
+     *  2 = WMI_NAN_DISC_SERVICE_REQ_SUBSCRIBE
+     */
+    A_UINT32 service_req_type;
+    /**
+     * Termination reason; refer to WMI_NAN_DISC_SERVICE_REQ_TERM_REASON enum:
+     * WMI_NAN_DISC_SERVICE_REQ_TERM_REASON_USER_REQUEST (0) —
+     *     cancelled by host
+     * WMI_NAN_DISC_SERVICE_REQ_TERM_REASON_TTL_EXPIRED  (1) —
+     *     TTL elapsed
+     * WMI_NAN_DISC_SERVICE_REQ_TERM_REASON_ERROR        (2) —
+     *     FW internal error
+     */
+    A_UINT32 reason;
+} wmi_nan_disc_service_req_terminated_event_fixed_param;
+
+/**
+* WMI NAN discovery match event (NL80211_CMD_NAN_MATCH equivalent).
+ * Covers two match scenarios, discriminated by the type field:
+ * type = WMI_NAN_DISC_SERVICE_REQ_PUBLISH   —
+ *     subscriber found a matching publisher
+ * type = WMI_NAN_DISC_SERVICE_REQ_SUBSCRIBE —
+ *     publisher received a subscribe frame
+ */
+typedef struct {
+    /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_nan_disc_match_event_fixed_param */
+    A_UINT32 tlv_header;
+    /** Unique id identifying the NMI VDEV */
+    A_UINT32 vdev_id;
+    /**
+     * Cookie assigned by the driver in the
+     * WMI_NAN_DISC_SERVICE_RSP_EVENTID response;
+     * host uses this to correlate the match to the originating function.
+     * Split into two A_UINT32 words for endian portability.
+     * Use WMI_NAN_DISC_COOKIE_GET/SET macros to access as A_UINT64.
+     */
+    A_UINT32 cookie_low32;  /* lower 32 bits of 64-bit cookie value */
+    A_UINT32 cookie_high32; /* upper 32 bits of 64-bit cookie value */
+    /** Local function instance ID that triggered the match */
+    A_UINT32 inst_id;
+    /** Peer's function instance ID */
+    A_UINT32 peer_inst_id;
+    /**
+     * NAN service request type discriminating the match scenario;
+     * refer to WMI_NAN_DISC_SERVICE_REQ_TYPE:
+     *  1 = WMI_NAN_DISC_SERVICE_REQ_PUBLISH   (subscriber matched a publisher)
+     *  2 = WMI_NAN_DISC_SERVICE_REQ_SUBSCRIBE (publisher received a subscribe)
+     */
+    A_UINT32 type;
+    /**
+     * SDEA control field from peer; use WMI_NAN_DISC_SDEA_CTRL_GET macros;
+     *  bit2=Data Path Required, bit6=Security Required
+     */
+    A_UINT32 sdea_ctrl;
+    /** Peer's pairing bootstrap methods bitmap */
+    A_UINT32 bootstrap_methods;
+    /** 1 = peer requires NDP (derived from SDEA bit 2); 0 = no NDP required */
+    A_UINT32 data_path;
+    /**
+     * 1 = GTK protection required (derived from SDEA bit 10);
+     * 0 = not required
+     */
+    A_UINT32 gtk_required;
+    /** 1 = peer supports pairing setup; 0 = not supported */
+    A_UINT32 pairing_setup;
+    /** 1 = peer supports pairing cache; 0 = not supported */
+    A_UINT32 pairing_cache;
+    /** 1 = peer supports pairing verify; 0 = not supported */
+    A_UINT32 pairing_verify;
+    /**
+     * Received signal strength indicator (RSSI) in dBm;
+     * valid only when rssi_valid == 1
+     */
+    A_INT32  rssi;
+    /** 1 = rssi field is valid; 0 = rssi not populated */
+    A_UINT32 rssi_valid;
+    /** Actual number of bytes in TLV peer_addr[] (always 6) */
+    A_UINT32 peer_addr_len;
+    /** Actual number of bytes in TLV service_id[] (always 6) */
+    A_UINT32 service_id_len;
+    /** Actual number of bytes in TLV serv_spec_info[] */
+    A_UINT32 serv_spec_info_len;
+    /** Actual number of bytes in TLV scid[] */
+    A_UINT32 scid_len;
+    /**
+     * Actual number of bytes in TLV extra_info[];
+     * relevant when peer includes Extended SSI attribute
+     */
+    A_UINT32 extra_info_len;
+    /**
+     * Actual number of bytes in TLV ies[];
+     * raw IE blob parsed by supplicant: NPBA→bootstrap handler,
+     * Shared Key Descriptor→NIK exchange
+     */
+    A_UINT32 ies_len;
+    /**
+     * TLV (tag length value) parameters follow this structure:
+     * wmi_mac_addr  peer_addr[];  peer NMI address, 6 bytes (padded to 8)
+     * A_UINT8  service_id[];      local service ID, 6 bytes
+     * A_UINT8  serv_spec_info[];  service specific info from peer
+     * A_UINT32 cipher_suites[];   peer's NAN cipher suite ID array
+     * A_UINT8  scid[];            secure context ID; present when security_required == 1
+     * A_UINT8  extra_info[];      extended SSI; present when extra_info_len > 0
+     * A_UINT8  ies[];             raw IEs blob; present when ies_len > 0
+     */
+} wmi_nan_disc_match_event_fixed_param;
 
 typedef struct {
     /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_nan_next_dw_info_fixed_param */
@@ -43401,6 +44018,12 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_REQUEST_TDLS_STATS_CMDID);
         WMI_RETURN_STRING(WMI_GET_CHIPSET_LOGGING_STATS_CMDID);
         WMI_RETURN_STRING(WMI_VDEV_GET_CHAN_HOP_STATUS_REPORT_CMDID);
+        WMI_RETURN_STRING(WMI_NAN_DISC_SERVICE_REQ_CMDID);
+        WMI_RETURN_STRING(WMI_NAN_DISC_CANCEL_SERVICE_REQ_CMDID);
+        WMI_RETURN_STRING(WMI_SET_MODIFY_TX_PLIM_CMDID);
+        WMI_RETURN_STRING(WMI_GET_AVG_TX_POWER_CMDID);
+        WMI_RETURN_STRING(WMI_GET_TX_POWER_CALLING_CMDID);
+        WMI_RETURN_STRING(WMI_ATHDIAG_READ_WRITE_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
@@ -55519,6 +56142,35 @@ typedef struct {
     A_UINT32 tlv_header;
 } wmi_get_scan_cache_result_cmd_fixed_param;
 
+typedef enum {
+    WMI_PLIM_DIRECTION_NONE = 0,
+    WMI_PLIM_DIRECTION_INCREASE,
+    WMI_PLIM_DIRECTION_DECREASE
+} wmi_plim_direction_type;
+
+typedef struct {
+    /* WMITLV_TAG_STRUC_wmi_set_modify_tx_plim_cmd_fixed_param */
+    A_UINT32 tlv_header;
+    /* Requested level for future enhancement, default value shall be 1 */
+    A_UINT32 multiplier;
+    /* takes values from enum wmi_plim_direction_type */
+    A_UINT32 direction;
+} wmi_set_modify_tx_plim_cmd_fixed_param;
+
+typedef struct {
+    /* WMITLV_TAG_STRUC_wmi_get_avg_tx_power_cmd_fixed_param */
+    A_UINT32 tlv_header;
+    /* Current active DSI (device state index) */
+    A_UINT32 dsi_id;
+} wmi_get_avg_tx_power_cmd_fixed_param;
+
+typedef struct {
+    /* WMITLV_TAG_STRUC_wmi_get_tx_power_calling_cmd_fixed_param */
+    A_UINT32 tlv_header;
+    /* DSI index for which power limit info is to be fetched */
+    A_UINT32 dsi_id;
+} wmi_get_tx_power_calling_cmd_fixed_param;
+
 /* Element ID 61 (HT Operation) is present (see HT 7.3.2) */
 #define WIFI_CACHED_SCAN_RESULT_FLAGS_HT_OPS_PRESENT_GET(flags)  WMI_GET_BITS(flags, 0, 1)
 #define WIFI_CACHED_SCAN_RESULT_FLAGS_HT_OPS_PRESENT_SET(flags, value) WMI_SET_BITS(flags, 0, 1, value)
@@ -55579,6 +56231,66 @@ typedef struct {
      *   - struct wmi_scan_cache_info scan_cache_info[];
      */
 } wmi_scan_cache_result_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header;  /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_modify_tx_plim_event_fixed_param */
+
+    A_UINT32 status; /* 0 = success, 1 = failure */
+} wmi_modify_tx_plim_event_fixed_param;
+
+typedef enum {
+    /* Invalid Chain combination */
+    WMI_POWER_REGION_INVALID    = 0,
+
+    /* Avg. tx power <= PowerLimit-backoff */
+    WMI_POWER_REGION_LOW        = 1,
+
+    /* PowerLimit-backoff < Avg. tx power <= PowerLimit */
+    WMI_POWER_REGION_MEDIUM     = 2,
+
+    /* PowerLimit < Avg. tx power <= PowerLimit+Boost */
+    WMI_POWER_REGION_HIGH       = 3,
+
+    /* Avg. tx power > PowerLimit+Boost */
+    WMI_POWER_REGION_EXTRA_HIGH = 4,
+
+} wmi_phyrf_tas_chain_power_region_type;
+
+typedef struct {
+    A_UINT32 tlv_header;  /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_avg_tx_power_region_per_antenna_chain */
+    /* Valid chain number for which chain_power_region is filled */
+    A_UINT32 chain_no;
+    A_UINT32 chain_operating_band; /* 0: 2GHz, 1: 5GHz, 2: 6GHz */
+    /* takes values from enum wmi_phyrf_tas_chain_power_region_type */
+    A_UINT32 chain_power_region;
+} wmi_avg_tx_power_region_per_antenna_chain;
+
+typedef struct {
+    A_UINT32 tlv_header;  /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_avg_tx_power_event_fixed_param */
+    A_UINT32  status; /* 0 = success, 1 = failure */
+    /* Exposure window over which TX power is averaged */
+    A_UINT32 time_window_in_sec;
+    /* The below TLVs follow this TLV
+     * struct wmi_avg_tx_power_region_per_antenna_chain[];
+     */
+} wmi_avg_tx_power_event_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header;  /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_tx_power_per_antenna_chain */
+    A_UINT32 chain_no; /* Valid chain number for which power is filled */
+    A_UINT32 chain_operating_band; /* 0: 2GHz, 1: 5GHz, 2: 6GHz */
+    A_INT32 power; /* Power limit in units of 0.25 dBm */
+} wmi_tx_power_per_antenna_chain;
+
+typedef struct  {
+    A_UINT32 tlv_header;  /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_plimit_table_event_fixed_param */
+    A_UINT32 status; /* 0 = success, 1 = failure */
+    A_UINT32 dsi_id; /* DSI index for which below entries are filled */
+    /* The below TLVs follow this TLV
+     * struct wmi_tx_power_per_antenna_chain[];
+     */
+} wmi_plimit_table_event_fixed_param;
+
 
 #define WMI_POWER_BOOST_CAPABILITIES_PHY_ID_GET(word32)        WMI_GET_BITS(word32, 0, 4)
 #define WMI_POWER_BOOST_CAPABILITIES_PHY_ID_SET(word32, value) WMI_SET_BITS(word32, 0, 4, value)
@@ -56602,6 +57314,8 @@ typedef struct {
                      offset: 16;
         };
     };
+    A_UINT32 tx_buffer_size; /* tx block ack window size */
+    A_UINT32 rx_buffer_size; /* rx block ack window size */
 } wmi_smd_roam_peer_tid_info;
 
 #define WMI_SMD_ROAM_CONFIG_CMD_FLAGS_GET_ROLE(cmd_flags)                      WMI_GET_BITS(mlo_flags, 0, 4)
@@ -57501,6 +58215,75 @@ typedef struct {
      *   - wmi_rtt_peer_meas_report_peer_meas_result_info peer_meas_info[]
      */
 } wmi_rtt_peer_meas_report_event_fixed_param;
+
+typedef struct {
+    /** TLV tag and len; tag equals
+     * WMITLV_TAG_STRUC_wmi_athdiag_read_write_cmd_fixed_param */
+    A_UINT32 tlv_header;
+    /* register offset to read or write using ath diag */
+    A_UINT32 offset;
+    /**
+     * Number of bytes to read from or write to 'offset'.
+     *
+     * For a read:  FW returns exactly 'data_length' bytes in the event.
+     * For a write: Host sends exactly 'data_length' bytes in the data TLV.
+     */
+    A_UINT32 data_length;
+    /**
+     * mem_type:
+     * Indicates the type of memory being accessed.
+     */
+    A_UINT32 mem_type;
+    /**
+     * is_write:
+     * Distinguishes between a read and a write operation.
+     *
+     *   0 = READ   FW reads 'data_length' bytes from 'offset'.
+     *               No data TLV is appended to this command.
+     *
+     *   1 = WRITE  FW writes 'data_length' bytes to 'offset'.
+     *               A WMITLV_TAG_ARRAY_BYTE TLV with the write payload
+     *               is appended to this command.
+     */
+    A_UINT32 is_write;
+} wmi_athdiag_read_write_cmd_fixed_param;
+
+typedef struct {
+    /** TLV tag and len; tag equals
+     * WMITLV_TAG_STRUC_wmi_athdiag_read_write_event_fixed_param */
+    A_UINT32 tlv_header;
+    /**
+     * Number of bytes to read from or write to 'offset'.
+     *
+     * For a read:  FW returns exactly 'data_length' bytes in the event.
+     * For a write: Host sends exactly 'data_length' bytes in the data TLV.
+     */
+    A_UINT32 data_length;
+    /**
+     * status:
+     * Result of the read or write operation performed by FW.
+     *
+     *   0        = Success  operation completed without error.
+     *   non-zero = Failure  FW-defined error codes.
+     */
+    A_UINT32 status;
+    /**
+     * is_write:
+     * Echoed back from the corresponding WMI_ATHDIAG_READ_WRITE_CMDID.
+     *
+     *   0 = READ  response  data TLV with 'data_length' bytes follows
+     *                        (only when status == 0)
+     *   1 = WRITE response  no data TLV appended; check 'status' only
+     */
+    A_UINT32 is_write;
+    /*
+     * This fixed_param TLV is followed by the following TLVs:
+     *   - A_UINT8 data[] (WMITLV_TAG_ARRAY_BYTE)
+     *     For READ  response (is_write == 0): read data, data_length bytes.
+     *                                         Present only when status == 0.
+     *     For WRITE response (is_write == 1): not present.
+     */
+} wmi_athdiag_read_write_event_fixed_param;
 
 
 
