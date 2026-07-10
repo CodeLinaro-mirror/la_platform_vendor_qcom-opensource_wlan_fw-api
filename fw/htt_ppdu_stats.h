@@ -2636,8 +2636,9 @@ typedef struct {
         /* older names */
         A_UINT32 resp_type_is_ampdu__short_retry__long_retry;
         A_UINT32 resp_type__is_ampdu__short_retry__long_retry__mprot_type__rts_success__rts_failure;
-        /* newest name */
         A_UINT32 resp_type__is_ampdu__short_retry__long_retry__mprot_type__rts_success__rts_failure__pream_punc_tx;
+        /* newest name */
+        A_UINT32 resp_type__is_ampdu__short_retry__long_retry__mprot_type__rts_success__rts_failure__pream_punc_tx__num_start_prot_tlvs;
         struct { /* bitfield names */
             A_UINT32 long_retries:               4,
                      short_retries:              4,
@@ -2647,7 +2648,9 @@ typedef struct {
                      rts_success:                1,
                      rts_failure:                1,
                      pream_punc_tx:              1,
-                     reserved0:                 13;
+                     /* per-FES START_PROT TLV count (0-3) */
+                     num_start_prot_tlvs:        3,
+                     reserved0:                 10;
         };
     };
 
