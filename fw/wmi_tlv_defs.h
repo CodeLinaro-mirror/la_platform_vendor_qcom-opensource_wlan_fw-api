@@ -1667,6 +1667,7 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_peer_uhr_omp_dso_params,
     WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_req_fixed_param,
     WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_rsp_fixed_param,
+    WMITLV_TAG_STRUC_wmi_nan_test_config_cmd_fixed_param,
 } WMITLV_TAG_ID;
 /*
  * IMPORTANT: Please add _ALL_ WMI Commands Here.
@@ -2281,6 +2282,7 @@ typedef enum {
     OP(WMI_PEER_GET_MAPC_PARAMS_CMDID) \
     OP(WMI_NAN_DISC_SERVICE_REQ_CMDID) \
     OP(WMI_NAN_DISC_CANCEL_SERVICE_REQ_CMDID) \
+    OP(WMI_NAN_TEST_CONFIG_CMDID) \
     OP(WMI_SET_MODIFY_TX_PLIM_CMDID) \
     OP(WMI_GET_AVG_TX_POWER_CMDID) \
     OP(WMI_GET_TX_POWER_CALLING_CMDID) \
@@ -4645,6 +4647,16 @@ WMITLV_CREATE_PARAM_STRUC(WMI_NAN_DISC_SERVICE_REQ_CMDID);
 #define WMITLV_TABLE_WMI_NAN_DISC_CANCEL_SERVICE_REQ_CMDID(id,op,buf,len) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_nan_disc_cancel_service_req_cmd_fixed_param, wmi_nan_disc_cancel_service_req_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX)
 WMITLV_CREATE_PARAM_STRUC(WMI_NAN_DISC_CANCEL_SERVICE_REQ_CMDID);
+
+/* Delay NAN Availability Update
+ *
+ * TLV (tag length value) parameters follow the
+ * wmi_nan_test_config_cmd_fixed_param structure. The TLV's are:
+ * wmi_nan_test_config_cmd_fixed_param fixed_param;
+ */
+#define WMITLV_TABLE_WMI_NAN_TEST_CONFIG_CMDID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_nan_test_config_cmd_fixed_param, wmi_nan_test_config_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+WMITLV_CREATE_PARAM_STRUC(WMI_NAN_TEST_CONFIG_CMDID);
 
 /* NAN Data Get Capabilities Cmd */
 #define WMITLV_TABLE_WMI_NDI_GET_CAP_REQ_CMDID(id,op,buf,len) \

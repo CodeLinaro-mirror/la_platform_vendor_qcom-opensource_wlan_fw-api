@@ -1610,6 +1610,8 @@ typedef enum {
      * was active.
      */
     WMI_NAN_DISC_CANCEL_SERVICE_REQ_CMDID,
+    /** WMI command to provide FW with updated NAN test config */
+    WMI_NAN_TEST_CONFIG_CMDID,
 
     /** Modem power state command */
     WMI_MODEM_POWER_STATE_CMDID = WMI_CMD_GRP_START_ID(WMI_GRP_COEX),
@@ -32745,6 +32747,28 @@ typedef struct {
     A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_nan_disable_cmd_fixed_param */
     A_UINT32 vdev_id; /* Virtual device ID used for NAN operations */
 } wmi_nan_disable_cmd_fixed_param;
+
+typedef enum {
+    WMI_NAN_TEST_CONF_CHANGE_NAN_AVAIL_DELAY = 0x00000001,
+} WMI_NAN_TEST_CONFIG_CHANGE_PARAM;
+
+typedef struct {
+    A_UINT32 tlv_header; /** TLV tag and len; tag equals
+                          * WMITLV_TAG_STRUC_wmi_nan_test_config_cmd_fixed_param
+                          */
+    /* nan_test_conf_change_bitmap:
+     * Bitmap indicating which NAN test-configuration parameters have changed
+     * and need to be updated by the target firmware. Each bit corresponds to
+     * a specific parameter defined in WMI_NAN_TEST_CONFIG_CHANGE_PARAM.
+     */
+    A_UINT32 nan_test_conf_change_bitmap;
+    /* nan_dfs_delay_nan_avail_update:
+     * Delay in milliseconds that FW must apply after which include NAN
+     * availbility attributes only if the updated values are received,
+     * else don't include the NAN availbility attributes
+     */
+    A_UINT32 nan_dfs_delay_nan_avail_update;
+} wmi_nan_test_config_cmd_fixed_param;
 
 #define WMI_NAN_SCHED_NOT_AVAIL_SLOT 0xFF
 
