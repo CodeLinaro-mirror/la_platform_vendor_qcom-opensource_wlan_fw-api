@@ -821,6 +821,32 @@ typedef  enum  {
      */
     WMI_SERVICE_SUPPORT_UL_TX_BEAMFORMER_AP_CONFIG = 514,
 
+    /* Indicates FW supports enable/disable TWT per vdev */
+    WMI_SERVICE_STA_TWT_EN_DIS_VDEV_SUPPORT = 515,
+
+    /*
+     * Indicates FW supports AWGN interference status request via
+     * WMI_PDEV_PARAM_AWGN_INT_STATUS_REQUEST, allowing host to query
+     * the current AWGN CCA segment bitmap (awgn_prev_int_seg) which
+     * is sent back immediately via WMI_DCS_INTERFERENCE_EVENTID.
+     */
+    WMI_SERVICE_AWGN_INT_STATUS_REQUEST_SUPPORT = 516,
+
+    WMI_SERVICE_WMI_ANOMALY_REPORTING = 517,
+
+    /*
+     * Indicates that FW supports C-TAS power indication reporting and
+     * power limit enquiring through cmds WMI_SET_MODIFY_TX_PLIM_CMDID,
+     * WMI_GET_AVG_TX_POWER_CMDID and WMI_GET_TX_POWER_CALLING_CMDID.
+     */
+    WMI_SERVICE_CTAS_PLIM_INDICATION_SUPPORT = 518,
+
+    /*
+     * Indicates FW supports NAN in offload mode
+     * (supplicant-based NAN offload mode architecture).
+     */
+    WMI_SERVICE_NAN_OFFLOAD_MODE_SUPPORT = 519,
+
 
     WMI_MAX_EXT2_SERVICE
 
