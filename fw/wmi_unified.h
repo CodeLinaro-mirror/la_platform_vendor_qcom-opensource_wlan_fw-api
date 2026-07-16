@@ -21028,6 +21028,13 @@ typedef enum {
      */
     WMI_VDEV_PARAM_DISABLE_OUI_BPCC_WOW_WAKE,             /* 0xD5 */
 
+    /*
+     * Reject ADDBA RX per vdev session.
+     *      0 - Allow ADDBA Rx session
+     *      1 - Reject ADDBA Rx session
+     */
+    WMI_VDEV_PARAM_REJECT_ADDBA,                          /* 0xD6 */
+
 
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
