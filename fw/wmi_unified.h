@@ -3341,9 +3341,11 @@ typedef struct _wmi_ppe_threshold {
 #define WMI_MAX_UHRCAP_MAC_SIZE  4
 #define WMI_MAX_UHRCAP_PHY_SIZE  8 /* as per spec recommendation */
 /* WMI_MAX_UHRCAP_DBE_SIZE:
- * B0-B7 header + up to 24+24 bits EHT-MCS maps
+ * Per 11bn D1.5: B0-B23 header (incl. Max BW Switch Time Period and
+ * DBE Mode Change Interval) + up to 32+32 bits DBE Capabilities
+ * (BW=160/320 MHz) fields = 88 bits total.
  */
-#define WMI_MAX_UHRCAP_DBE_SIZE  2
+#define WMI_MAX_UHRCAP_DBE_SIZE  3
 
 /*
  * 0 – index indicated EHT-MCS map for 20Mhz only sta (4 bytes valid)
@@ -24077,40 +24079,44 @@ typedef struct {
 
 
 /* npca_op_param macros */
+/*
+ * Per 11bn D1.5: NPCA Primary Channel widened from 4 to 8 bits, shifting
+ * all subsequent NPCA Operation Parameters subfields by 4 bits.
+ */
 #define WMI_PEER_UHR_NPCA_OP_PARAM_PRIMARY_CHANNEL_GET(_var) \
-    WMI_GET_BITS(_var, 0, 4)
+    WMI_GET_BITS(_var, 0, 8)
 #define WMI_PEER_UHR_NPCA_OP_PARAM_PRIMARY_CHANNEL_SET(_var, _val) \
-    WMI_SET_BITS(_var, 0, 4, _val)
+    WMI_SET_BITS(_var, 0, 8, _val)
 
 #define WMI_PEER_UHR_NPCA_OP_PARAM_MIN_DURATION_THRESHOLD_GET(_var) \
-    WMI_GET_BITS(_var, 4, 4)
+    WMI_GET_BITS(_var, 8, 4)
 #define WMI_PEER_UHR_NPCA_OP_PARAM_MIN_DURATION_THRESHOLD_SET(_var, _val) \
-    WMI_SET_BITS(_var, 4, 4, _val)
+    WMI_SET_BITS(_var, 8, 4, _val)
 
 #define WMI_PEER_UHR_NPCA_OP_PARAM_SWITCH_DELAY_GET(_var) \
-    WMI_GET_BITS(_var, 8, 6)
+    WMI_GET_BITS(_var, 12, 6)
 #define WMI_PEER_UHR_NPCA_OP_PARAM_SWITCH_DELAY_SET(_var, _val) \
-    WMI_SET_BITS(_var, 8, 6, _val)
+    WMI_SET_BITS(_var, 12, 6, _val)
 
 #define WMI_PEER_UHR_NPCA_OP_PARAM_SWITCH_BACK_DELAY_GET(_var) \
-    WMI_GET_BITS(_var, 14, 6)
+    WMI_GET_BITS(_var, 18, 6)
 #define WMI_PEER_UHR_NPCA_OP_PARAM_SWITCH_BACK_DELAY_SET(_var, _val) \
-    WMI_SET_BITS(_var, 14, 6, _val)
+    WMI_SET_BITS(_var, 18, 6, _val)
 
 #define WMI_PEER_UHR_NPCA_OP_PARAM_INITIAL_QSRC_GET(_var) \
-    WMI_GET_BITS(_var, 20, 2)
+    WMI_GET_BITS(_var, 24, 2)
 #define WMI_PEER_UHR_NPCA_OP_PARAM_INITIAL_QSRC_SET(_var, _val) \
-    WMI_SET_BITS(_var, 20, 2, _val)
+    WMI_SET_BITS(_var, 24, 2, _val)
 
 #define WMI_PEER_UHR_NPCA_OP_PARAM_MOPLEN_NPCA_GET(_var) \
-    WMI_GET_BITS(_var, 22, 1)
+    WMI_GET_BITS(_var, 26, 1)
 #define WMI_PEER_UHR_NPCA_OP_PARAM_MOPLEN_NPCA_SET(_var, _val) \
-    WMI_SET_BITS(_var, 22, 1, _val)
+    WMI_SET_BITS(_var, 26, 1, _val)
 
 #define WMI_PEER_UHR_NPCA_OP_PARAM_DIS_SUBCHAN_BMAP_PRESENT_GET(_var) \
-    WMI_GET_BITS(_var, 23, 1)
+    WMI_GET_BITS(_var, 27, 1)
 #define WMI_PEER_UHR_NPCA_OP_PARAM_DIS_SUBCHAN_BMAP_PRESENT_SET(_var, _val) \
-    WMI_SET_BITS(_var, 23, 1, _val)
+    WMI_SET_BITS(_var, 27, 1, _val)
 
 /* npca_op_param1 macros */
 #define WMI_PEER_UHR_NPCA_OP_PARAM1_DISABLED_SUBCHAN_BITMAP_GET(_var) \
@@ -24124,37 +24130,41 @@ typedef struct {
      * All below fields are advertised by UHR AP in UHR NPCA Op Param Field
      * in UHR Operation IE
      *
-     * Bit 0-3  : NPCA Primary Channel.
+     * Per 11bn D1.5, NPCA Primary Channel widened from 4 to 8 bits
+     * (to support up to 256 channel values), shifting all subsequent
+     * subfields by 4 bits relative to D1.4.
+     *
+     * Bit 0-7  : NPCA Primary Channel.
      *            Indicates the channel number of a channel within BSS
      *            bandwidth that both STA and AP switch to for NPCA operation.
      *
-     * Bit 4-7  : NPCA Minimum Duration Threshold (NMDT).
+     * Bit 8-11 : NPCA Minimum Duration Threshold (NMDT).
      *            FW to convert this value into microsecs using
      *            512 + (NMDT * 128) usec.
      *
-     * Bit 8-13 : NPCA Switch Delay, in units of 4 us.
+     * Bit 12-17: NPCA Switch Delay, in units of 4 us.
      *            The time needed by an NPCA AP to switch from the BSS
      *            primary channel to the NPCA primary channel.
      *
-     * Bit 14-19: NPCA Switch Back Delay, in units of 4 us.
+     * Bit 18-23: NPCA Switch Back Delay, in units of 4 us.
      *            The time needed by an NPCA AP to switch from the NPCA
      *            primary channel to the BSS primary channel.
      *
-     * Bit 20-21: Initial NPCA QSRC.
+     * Bit 24-25: Initial NPCA QSRC.
      *            Indicates the value that is used to initialize the EDCAF
      *            QSRC[AC] variables when an NPCA STA in the BSS switches
      *            to NPCA operation.
      *
-     * Bit 22   : MOPLEN NPCA.
+     * Bit 26   : MOPLEN NPCA.
      *            Indicates which conditions can be used to initiate an
      *            NPCA operation.
      *            Value 1 means both PHYLEN and MOPLEN operations are
      *            permitted in BSS.
      *            Value 0 means only PHYLEN operation is allowed in the BSS.
      *
-     * Bit 23   : NPCA Disabled Subchannel Bitmap Present
+     * Bit 27   : NPCA Disabled Subchannel Bitmap Present
      *
-     * Bit 24-31: Reserved
+     * Bit 28-31: Reserved
      */
     /* Use WMI_PEER_UHR_NPCA_OP_PARAM_ GET/SET macros for each field */
     A_UINT32 npca_op_param;
@@ -42590,41 +42600,53 @@ typedef struct {
 #define WMI_UHRCAP_MAC_UHR_OPMODE_TIMEOUT_SET(uhr_cap_mac, value) \
     WMI_SET_BITS(uhr_cap_mac[0], 22, 4, value)
 
-/* Bit 26 - 28 : Parameter Update Adv Notification Interval */
+/* Bit 26 - 30 : Parameter Update Adv Notification Interval */
 #define WMI_UHRCAP_MAC_PARAM_UPDATE_ADV_GET(uhr_cap_mac) \
-    WMI_GET_BITS(uhr_cap_mac[0], 26, 3)
+    WMI_GET_BITS(uhr_cap_mac[0], 26, 5)
 #define WMI_UHRCAP_MAC_PARAM_UPDATE_ADV_SET(uhr_cap_mac, value) \
-    WMI_SET_BITS(uhr_cap_mac[0], 26, 3, value)
+    WMI_SET_BITS(uhr_cap_mac[0], 26, 5, value)
 
-/* Bit 29-33: Update Indication In TIM Interval */
+/* Bit 31-35: Update Indication In TIM Interval */
 #define WMI_UHRCAP_MAC_UPDATE_IND_TIM_GET(uhr_cap_mac) \
-    (WMI_GET_BITS(uhr_cap_mac[0], 29, 3) | \
-     (WMI_GET_BITS(uhr_cap_mac[1], 0, 2) << 3))
+    (WMI_GET_BITS(uhr_cap_mac[0], 31, 1) | \
+     (WMI_GET_BITS(uhr_cap_mac[1], 0, 4) << 1))
 #define WMI_UHRCAP_MAC_UPDATE_IND_TIM_SET(uhr_cap_mac, value) \
     do { \
-        WMI_SET_BITS(uhr_cap_mac[0], 29, 3, value & 0x7); \
-        WMI_SET_BITS(uhr_cap_mac[1], 0, 2, ((value & 0x18) >> 3)); \
+        WMI_SET_BITS(uhr_cap_mac[0], 31, 1, value & 0x1); \
+        WMI_SET_BITS(uhr_cap_mac[1], 0, 4, ((value & 0x1E) >> 1)); \
     } while (0)
 
-/* Bit 34: Bounded ESS */
+/* Bit 36: Bounded ESS */
 #define WMI_UHRCAP_MAC_BOUNDED_ESS_GET(uhr_cap_mac) \
-    WMI_GET_BITS(uhr_cap_mac[1], 3, 1)
-#define WMI_UHRCAP_MAC_BOUNDED_ESS_SET(uhr_cap_mac, value) \
-    WMI_SET_BITS(uhr_cap_mac[1], 3, 1, value)
-
-/* Bit 35: BTM Assurance */
-#define WMI_UHRCAP_MAC_BTM_ASSURANCE_GET(uhr_cap_mac) \
     WMI_GET_BITS(uhr_cap_mac[1], 4, 1)
-#define WMI_UHRCAP_MAC_BTM_ASSURANCE_SET(uhr_cap_mac, value) \
+#define WMI_UHRCAP_MAC_BOUNDED_ESS_SET(uhr_cap_mac, value) \
     WMI_SET_BITS(uhr_cap_mac[1], 4, 1, value)
 
-/* Bit 36: Co-BF Support */
-#define WMI_UHRCAP_MAC_COBF_SUPPORT_GET(uhr_cap_mac) \
+/* Bit 37: BTM Assurance */
+#define WMI_UHRCAP_MAC_BTM_ASSURANCE_GET(uhr_cap_mac) \
     WMI_GET_BITS(uhr_cap_mac[1], 5, 1)
-#define WMI_UHRCAP_MAC_COBF_SUPPORT_SET(uhr_cap_mac, value) \
+#define WMI_UHRCAP_MAC_BTM_ASSURANCE_SET(uhr_cap_mac, value) \
     WMI_SET_BITS(uhr_cap_mac[1], 5, 1, value)
 
-/* Bits 37-63 --- Reserved */
+/* Bit 38: Co-BF Support */
+#define WMI_UHRCAP_MAC_COBF_SUPPORT_GET(uhr_cap_mac) \
+    WMI_GET_BITS(uhr_cap_mac[1], 6, 1)
+#define WMI_UHRCAP_MAC_COBF_SUPPORT_SET(uhr_cap_mac, value) \
+    WMI_SET_BITS(uhr_cap_mac[1], 6, 1, value)
+
+/* Bit 39: Co-SR Support */
+#define WMI_UHRCAP_MAC_COSR_SUPPORT_GET(uhr_cap_mac) \
+    WMI_GET_BITS(uhr_cap_mac[1], 7, 1)
+#define WMI_UHRCAP_MAC_COSR_SUPPORT_SET(uhr_cap_mac, value) \
+    WMI_SET_BITS(uhr_cap_mac[1], 7, 1, value)
+
+/* Bit 40: MAPC Enhanced Measurement Support */
+#define WMI_UHRCAP_MAC_MAPC_ENH_MEAS_GET(uhr_cap_mac) \
+    WMI_GET_BITS(uhr_cap_mac[1], 8, 1)
+#define WMI_UHRCAP_MAC_MAPC_ENH_MEAS_SET(uhr_cap_mac, value) \
+    WMI_SET_BITS(uhr_cap_mac[1], 8, 1, value)
+
+/* Bits 41-63 --- Reserved */
 
 /*
  * NOTE: uhr_cap_mac[2] and uhr_cap_mac[3] (bits 64-127) are reserved.
@@ -42671,17 +42693,89 @@ typedef struct {
 
 /* Bits B5-B7: Reserved */
 
-/* Bits B8-B31: EHT-MCS Map (BW=160 MHz) — present only if B3 is set (0 or 24 bits) */
-#define WMI_UHRCAP_DBE_EHT_MCS_MAP_160_GET(uhr_cap_dbe) \
-    WMI_GET_BITS(uhr_cap_dbe[0], 8, 24)
-#define WMI_UHRCAP_DBE_EHT_MCS_MAP_160_SET(uhr_cap_dbe, value) \
-    WMI_SET_BITS(uhr_cap_dbe[0], 8, 24, value)
+/* Bits B8-B15: Maximum DBE Bandwidth Switch Time Period, in TUs */
+#define WMI_UHRCAP_DBE_MAX_BW_SWITCH_TIME_PERIOD_GET(uhr_cap_dbe) \
+    WMI_GET_BITS(uhr_cap_dbe[0], 8, 8)
+#define WMI_UHRCAP_DBE_MAX_BW_SWITCH_TIME_PERIOD_SET(uhr_cap_dbe, value) \
+    WMI_SET_BITS(uhr_cap_dbe[0], 8, 8, value)
 
-/* Bits B32-B55: EHT-MCS Map (BW=320 MHz) — present only if B4 is set (0 or 24 bits) */
+/* Bits B16-B23: DBE Mode Change Interval, in minutes (values 0-9 reserved) */
+#define WMI_UHRCAP_DBE_MODE_CHANGE_INTERVAL_GET(uhr_cap_dbe) \
+    WMI_GET_BITS(uhr_cap_dbe[0], 16, 8)
+#define WMI_UHRCAP_DBE_MODE_CHANGE_INTERVAL_SET(uhr_cap_dbe, value) \
+    WMI_SET_BITS(uhr_cap_dbe[0], 16, 8, value)
+
+/*
+ * Bits B24-B55: DBE Capabilities (BW=160 MHz) — present only if B3 is set
+ * (0 or 32 bits): B24-B47 EHT-MCS Map (24 bits), B48-B50 Number Of Sounding
+ * Dimensions (=160 MHz), B51 Non-OFDMA UL MU-MIMO (BW=160 MHz), B52 MU
+ * Beamformer (BW=160 MHz), B53-B55 Beamformee SS (=160 MHz).
+ */
+#define WMI_UHRCAP_DBE_EHT_MCS_MAP_160_GET(uhr_cap_dbe) \
+    (WMI_GET_BITS(uhr_cap_dbe[0], 24, 8) | \
+     (WMI_GET_BITS(uhr_cap_dbe[1], 0, 16) << 8))
+#define WMI_UHRCAP_DBE_EHT_MCS_MAP_160_SET(uhr_cap_dbe, value) \
+    do { \
+        WMI_SET_BITS(uhr_cap_dbe[0], 24, 8, (value) & 0xFF); \
+        WMI_SET_BITS(uhr_cap_dbe[1], 0, 16, ((value) >> 8) & 0xFFFF); \
+    } while (0)
+
+#define WMI_UHRCAP_DBE_NUM_SOUNDING_DIM_160_GET(uhr_cap_dbe) \
+    WMI_GET_BITS(uhr_cap_dbe[1], 16, 3)
+#define WMI_UHRCAP_DBE_NUM_SOUNDING_DIM_160_SET(uhr_cap_dbe, value) \
+    WMI_SET_BITS(uhr_cap_dbe[1], 16, 3, value)
+
+#define WMI_UHRCAP_DBE_NON_OFDMA_UL_MUMIMO_160_GET(uhr_cap_dbe) \
+    WMI_GET_BITS(uhr_cap_dbe[1], 19, 1)
+#define WMI_UHRCAP_DBE_NON_OFDMA_UL_MUMIMO_160_SET(uhr_cap_dbe, value) \
+    WMI_SET_BITS(uhr_cap_dbe[1], 19, 1, value)
+
+#define WMI_UHRCAP_DBE_MU_BEAMFORMER_160_GET(uhr_cap_dbe) \
+    WMI_GET_BITS(uhr_cap_dbe[1], 20, 1)
+#define WMI_UHRCAP_DBE_MU_BEAMFORMER_160_SET(uhr_cap_dbe, value) \
+    WMI_SET_BITS(uhr_cap_dbe[1], 20, 1, value)
+
+#define WMI_UHRCAP_DBE_BEAMFORMEE_SS_160_GET(uhr_cap_dbe) \
+    WMI_GET_BITS(uhr_cap_dbe[1], 21, 3)
+#define WMI_UHRCAP_DBE_BEAMFORMEE_SS_160_SET(uhr_cap_dbe, value) \
+    WMI_SET_BITS(uhr_cap_dbe[1], 21, 3, value)
+
+/*
+ * Bits B56-B87: DBE Capabilities (BW=320 MHz) — present only if B4 is set
+ * (0 or 32 bits): B56-B79 EHT-MCS Map (24 bits), B80-B82 Number Of Sounding
+ * Dimensions (=320 MHz), B83 Non-OFDMA UL MU-MIMO (BW=320 MHz), B84 MU
+ * Beamformer (BW=320 MHz), B85-B87 Beamformee SS (=320 MHz).
+ */
 #define WMI_UHRCAP_DBE_EHT_MCS_MAP_320_GET(uhr_cap_dbe) \
-    WMI_GET_BITS(uhr_cap_dbe[1], 0, 24)
+    (WMI_GET_BITS(uhr_cap_dbe[1], 24, 8) | \
+     (WMI_GET_BITS(uhr_cap_dbe[2], 0, 16) << 8))
 #define WMI_UHRCAP_DBE_EHT_MCS_MAP_320_SET(uhr_cap_dbe, value) \
-    WMI_SET_BITS(uhr_cap_dbe[1], 0, 24, value)
+    do { \
+        WMI_SET_BITS(uhr_cap_dbe[1], 24, 8, (value) & 0xFF); \
+        WMI_SET_BITS(uhr_cap_dbe[2], 0, 16, ((value) >> 8) & 0xFFFF); \
+    } while (0)
+
+#define WMI_UHRCAP_DBE_NUM_SOUNDING_DIM_320_GET(uhr_cap_dbe) \
+    WMI_GET_BITS(uhr_cap_dbe[2], 16, 3)
+#define WMI_UHRCAP_DBE_NUM_SOUNDING_DIM_320_SET(uhr_cap_dbe, value) \
+    WMI_SET_BITS(uhr_cap_dbe[2], 16, 3, value)
+
+#define WMI_UHRCAP_DBE_NON_OFDMA_UL_MUMIMO_320_GET(uhr_cap_dbe) \
+    WMI_GET_BITS(uhr_cap_dbe[2], 19, 1)
+#define WMI_UHRCAP_DBE_NON_OFDMA_UL_MUMIMO_320_SET(uhr_cap_dbe, value) \
+    WMI_SET_BITS(uhr_cap_dbe[2], 19, 1, value)
+
+#define WMI_UHRCAP_DBE_MU_BEAMFORMER_320_GET(uhr_cap_dbe) \
+    WMI_GET_BITS(uhr_cap_dbe[2], 20, 1)
+#define WMI_UHRCAP_DBE_MU_BEAMFORMER_320_SET(uhr_cap_dbe, value) \
+    WMI_SET_BITS(uhr_cap_dbe[2], 20, 1, value)
+
+#define WMI_UHRCAP_DBE_BEAMFORMEE_SS_320_GET(uhr_cap_dbe) \
+    WMI_GET_BITS(uhr_cap_dbe[2], 21, 3)
+#define WMI_UHRCAP_DBE_BEAMFORMEE_SS_320_SET(uhr_cap_dbe, value) \
+    WMI_SET_BITS(uhr_cap_dbe[2], 21, 3, value)
+
+/* Bits B88-B95 (uhr_cap_dbe[2] bits 24-31): Reserved */
 
 /****** End of 11BN UHR DBE Capability Parameters field ******/ /* } */
 
@@ -50793,13 +50887,50 @@ typedef struct {
 #define WMI_UHR_OPS_PEDCA_ENABLED_SET(uhr_ops, value) \
     WMI_SET_BITS(uhr_ops, 4, 1, value)
 
-/* Bit 5~7 DBE Bandwidth */
+/* Bit 5-7 DBE Bandwidth */
 #define WMI_UHR_OPS_DBE_BANDWIDTH_GET(uhr_ops) \
     WMI_GET_BITS(uhr_ops, 5, 3)
 #define WMI_UHR_OPS_DBE_BANDWIDTH_SET(uhr_ops, value) \
     WMI_SET_BITS(uhr_ops, 5, 3, value)
 
-/* Bit 8~15: reserved */
+/* Bit 8 ELR Rx Enabled (11bn D1.5) */
+#define WMI_UHR_OPS_ELR_RX_ENABLED_GET(uhr_ops) \
+    WMI_GET_BITS(uhr_ops, 8, 1)
+#define WMI_UHR_OPS_ELR_RX_ENABLED_SET(uhr_ops, value) \
+    WMI_SET_BITS(uhr_ops, 8, 1, value)
+
+/* Bit 9 DUO Operation Parameters Present (11bn D1.5) */
+#define WMI_UHR_OPS_DUO_OP_PARAMS_PRESENT_GET(uhr_ops) \
+    WMI_GET_BITS(uhr_ops, 9, 1)
+#define WMI_UHR_OPS_DUO_OP_PARAMS_PRESENT_SET(uhr_ops, value) \
+    WMI_SET_BITS(uhr_ops, 9, 1, value)
+
+/* Bit 10 DPS Operation Parameters Present (11bn D1.5) */
+#define WMI_UHR_OPS_DPS_OP_PARAMS_PRESENT_GET(uhr_ops) \
+    WMI_GET_BITS(uhr_ops, 10, 1)
+#define WMI_UHR_OPS_DPS_OP_PARAMS_PRESENT_SET(uhr_ops, value) \
+    WMI_SET_BITS(uhr_ops, 10, 1, value)
+
+/* Bit 11 NPCA Operation Parameters Present (11bn D1.5) */
+#define WMI_UHR_OPS_NPCA_OP_PARAMS_PRESENT_GET(uhr_ops) \
+    WMI_GET_BITS(uhr_ops, 11, 1)
+#define WMI_UHR_OPS_NPCA_OP_PARAMS_PRESENT_SET(uhr_ops, value) \
+    WMI_SET_BITS(uhr_ops, 11, 1, value)
+
+/* Bit 12 P-EDCA Operation Parameters Present (11bn D1.5) */
+#define WMI_UHR_OPS_PEDCA_OP_PARAMS_PRESENT_GET(uhr_ops) \
+    WMI_GET_BITS(uhr_ops, 12, 1)
+#define WMI_UHR_OPS_PEDCA_OP_PARAMS_PRESENT_SET(uhr_ops, value) \
+    WMI_SET_BITS(uhr_ops, 12, 1, value)
+
+/* Bit 13 DBE Operation Parameters Present (11bn D1.5) */
+#define WMI_UHR_OPS_DBE_OP_PARAMS_PRESENT_GET(uhr_ops) \
+    WMI_GET_BITS(uhr_ops, 13, 1)
+#define WMI_UHR_OPS_DBE_OP_PARAMS_PRESENT_SET(uhr_ops, value) \
+    WMI_SET_BITS(uhr_ops, 13, 1, value)
+
+/* Bit 14-15: reserved */
+
 /****** End of 11BN UHR Operation Parameters field ******/
 
 typedef struct {
