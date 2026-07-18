@@ -32773,6 +32773,7 @@ typedef struct {
     A_UINT32 tlv_header; /** TLV tag and len; tag equals
                           * WMITLV_TAG_STRUC_wmi_nan_test_config_cmd_fixed_param
                           */
+    A_UINT32 vdev_id;
     /* nan_test_conf_change_bitmap:
      * Bitmap indicating which NAN test-configuration parameters have changed
      * and need to be updated by the target firmware. Each bit corresponds to
