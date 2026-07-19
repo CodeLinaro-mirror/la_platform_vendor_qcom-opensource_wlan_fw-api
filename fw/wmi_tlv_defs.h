@@ -1668,6 +1668,8 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_req_fixed_param,
     WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_rsp_fixed_param,
     WMITLV_TAG_STRUC_wmi_nan_test_config_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_evt_fixed_param,
 } WMITLV_TAG_ID;
 /*
  * IMPORTANT: Please add _ALL_ WMI Commands Here.
@@ -2288,6 +2290,7 @@ typedef enum {
     OP(WMI_GET_TX_POWER_CALLING_CMDID) \
     OP(WMI_ATHDIAG_READ_WRITE_CMDID) \
     OP(WMI_RTT_PEER_MEAS_CAP_REQ_CMDID) \
+    OP(WMI_PDEV_GET_CURRENT_TX_POWER_CMDID) \
     /* add new CMD_LIST elements above this line */
 
 
@@ -2669,6 +2672,7 @@ typedef enum {
     OP(WMI_PEER_MAPC_SETUP_STATUS_EVENTID) \
     OP(WMI_PEER_MAPC_GET_PARAMS_EVENTID) \
     OP(WMI_RTT_PEER_MEAS_CAP_RSP_EVENTID) \
+    OP(WMI_PDEV_GET_CURRENT_TX_POWER_EVENTID) \
     /* add new EVT_LIST elements above this line */
 
 
@@ -6750,6 +6754,11 @@ WMITLV_CREATE_PARAM_STRUC(WMI_ATHDIAG_READ_WRITE_CMDID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_req_fixed_param, wmi_rtt_peer_meas_cap_req_fixed_param, fixed_param, WMITLV_SIZE_FIX)
 WMITLV_CREATE_PARAM_STRUC(WMI_RTT_PEER_MEAS_CAP_REQ_CMDID);
 
+/* Get current TX power for connected channel */
+#define WMITLV_TABLE_WMI_PDEV_GET_CURRENT_TX_POWER_CMDID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_cmd_fixed_param, wmi_pdev_get_current_tx_power_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+WMITLV_CREATE_PARAM_STRUC(WMI_PDEV_GET_CURRENT_TX_POWER_CMDID);
+
 
 
 /************************** TLV definitions of WMI events *******************************/
@@ -9247,6 +9256,11 @@ WMITLV_CREATE_PARAM_STRUC(WMI_ATHDIAG_READ_WRITE_EVENTID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_rtt_peer_meas_cap_rsp_fixed_param, wmi_rtt_peer_meas_cap_rsp_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_rtt_peer_meas_capabilities, wmi_rtt_peer_meas_capabilities, rtt_cap, WMITLV_SIZE_FIX)
 WMITLV_CREATE_PARAM_STRUC(WMI_RTT_PEER_MEAS_CAP_RSP_EVENTID);
+
+/* Get current TX power Event */
+#define WMITLV_TABLE_WMI_PDEV_GET_CURRENT_TX_POWER_EVENTID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_evt_fixed_param, wmi_pdev_get_current_tx_power_evt_fixed_param, fixed_param, WMITLV_SIZE_FIX)
+WMITLV_CREATE_PARAM_STRUC(WMI_PDEV_GET_CURRENT_TX_POWER_EVENTID);
 
 
 #ifdef __cplusplus

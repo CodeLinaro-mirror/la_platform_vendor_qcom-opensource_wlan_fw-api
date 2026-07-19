@@ -634,6 +634,8 @@ typedef enum {
     WMI_PDEV_POWER_DATAPATH_STATS_CMDID,
     /** WMI cmd to get the CUMAC chip ID */
     WMI_PDEV_SET_CUMAC_CHIP_CMDID,
+    /** Get current TX power for the connected channel */
+    WMI_PDEV_GET_CURRENT_TX_POWER_CMDID,
 
     /* VDEV (virtual device) specific commands */
     /** vdev create */
@@ -2130,6 +2132,10 @@ typedef enum {
 
     /** Event to indicate CUMAC Chip ID initialization completed to host */
     WMI_PDEV_SET_CUMAC_CHIP_ID_CONFIRMATION_EVENTID, /* 55 */
+
+    /* Event returning current TX power for the connected channel */
+    WMI_PDEV_GET_CURRENT_TX_POWER_EVENTID, /* 56 */
+
 
     /***
      *** add new WMI_PDEV EVENTID defs directly above here,
@@ -23409,15 +23415,15 @@ typedef struct {
 #define WMI_PEER_SAFEMODE_EN     0x80000000  /* Fips Mode Enabled */
 
 /** define for peer_flags_ext */
-#define WMI_PEER_EXT_EHT                0x00000001  /* EHT enabled */
-#define WMI_PEER_EXT_320MHZ             0x00000002  /* 320Mhz enabled */
-#define WMI_PEER_EXT_DMS_CAPABLE        0x00000004
-#define WMI_PEER_EXT_HE_CAPS_6GHZ_VALID 0x00000008  /* param he_caps_6ghz is valid or not */
-#define WMI_PEER_EXT_IS_QUALCOMM_NODE   0x00000010 /* Indicates if the peer connecting is a qualcomm node */
-#define WMI_PEER_EXT_IS_MESH_NODE       0x00000020 /* Indicates if the peer connecting is a mesh node */
-#define WMI_PEER_EXT_PROTECTED_TWT      0x00000040 /* Protected TWT operation Support field in Extended RSN Capabilities element */
-#define WMI_PEER_EXT_UHR                0x00000080 /* UHR enabled */
-#define WMI_PEER_EXT_2XLDPC             0x00000100 /* Peer supports 2x LDPC (3888-bit codeword) */
+#define WMI_PEER_EXT_EHT                  0x00000001  /* EHT enabled */
+#define WMI_PEER_EXT_320MHZ               0x00000002  /* 320Mhz enabled */
+#define WMI_PEER_EXT_DMS_CAPABLE          0x00000004
+#define WMI_PEER_EXT_HE_CAPS_6GHZ_VALID   0x00000008  /* param he_caps_6ghz is valid or not */
+#define WMI_PEER_EXT_IS_QUALCOMM_NODE     0x00000010 /* Indicates if the peer connecting is a qualcomm node */
+#define WMI_PEER_EXT_IS_MESH_NODE         0x00000020 /* Indicates if the peer connecting is a mesh node */
+#define WMI_PEER_EXT_PROTECTED_TWT        0x00000040 /* Protected TWT operation Support field in Extended RSN Capabilities element */
+#define WMI_PEER_EXT_UHR                  0x00000080 /* UHR enabled */
+#define WMI_PEER_EXT_2XLDPC               0x00000100 /* Peer supports 2x LDPC (3888-bit codeword) */
 
 #define WMI_PEER_EXT_F_CRIT_PROTO_HINT_ENABLED 0x40000000
 #define WMI_PEER_EXT_SMD_ASSOC          0x80000000
@@ -44287,6 +44293,8 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_GET_TX_POWER_CALLING_CMDID);
         WMI_RETURN_STRING(WMI_ATHDIAG_READ_WRITE_CMDID);
         WMI_RETURN_STRING(WMI_RTT_PEER_MEAS_CAP_REQ_CMDID);
+        WMI_RETURN_STRING(WMI_NAN_TEST_CONFIG_CMDID);
+        WMI_RETURN_STRING(WMI_PDEV_GET_CURRENT_TX_POWER_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
@@ -58714,6 +58722,47 @@ typedef struct {
      *     For WRITE response (is_write == 1): not present.
      */
 } wmi_athdiag_read_write_event_fixed_param;
+
+/* WMI_PDEV_GET_CURRENT_TX_POWER_CMDID fixed param (host -> firmware) */
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_cmd_fixed_param */
+    A_UINT32 pdev_id;    /* PDEV ID targeted by the query */
+} wmi_pdev_get_current_tx_power_cmd_fixed_param;
+
+/*
+ * WMI_PDEV_GET_CURRENT_TX_POWER_EVENTID fixed param (firmware -> host)
+ *
+ * All power fields are in units of 0.25 dBm (one fourth-dBm).  A signed value
+ * of -1 (0xffffffff) in chain0/chain1 power means "chain not active".
+ * power_type_6ghz is only valid when band == 2 (6 GHz); set to 0 otherwise.
+ * Refer to WMI_6GHZ_REG_PWRMODE_TYPE for the 6 GHz power mode encoding.
+ */
+typedef struct {
+    A_UINT32 tlv_header;      /* WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_evt_fixed_param */
+    A_UINT32 pdev_id;         /* PDEV ID echoed from the command */
+    A_UINT32 final_tx_power;  /* Final TX power (one fourth-dBm) */
+    A_UINT32 band;            /* 0=2.4G, 1=5G, 2=6G */
+    A_UINT32 channel;         /* Primary 20 MHz channel frequency in MHz */
+    A_UINT32 freq_mhz;        /* Center frequency in MHz */
+    A_UINT32 bandwidth_mhz;   /* Operational bandwidth:
+                               * 0=20 MHz, 1=40 MHz, 2=80 MHz,
+                               * 3=160 MHz, 4=320 MHz
+                               */
+    A_UINT32 phy_mode;        /* WLAN_PHY_MODE
+                               * (MODE_11A, MODE_11AX_HE80, ...)
+                               */
+    A_UINT32 nss;             /* Number of spatial streams (chain count) */
+    A_UINT32 rate_mcs;        /* WMI_PDEV_RATE_IDX rate/MCS index */
+    A_UINT32 chain0_power;    /* Chain 0 TX power
+                               * (one fourth-dBm, 0xFFFFFFFF = inactive)
+                               */
+    A_UINT32 chain1_power;    /* Chain 1 TX power
+                               * (one fourth-dBm, 0xFFFFFFFF = inactive)
+                               */
+    A_UINT32 power_type_6ghz; /* WMI_6GHZ_REG_PWRMODE_TYPE;
+                               * valid only for 6G band
+                               */
+} wmi_pdev_get_current_tx_power_evt_fixed_param;
 
 
 
