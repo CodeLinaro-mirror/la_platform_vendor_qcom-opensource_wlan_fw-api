@@ -34558,6 +34558,8 @@ typedef struct {
      * Ex: SAE PW ID KDE data
      */
     A_UINT32 kde_length;
+    /* IEEE value for pairwise cipher */
+    A_UINT32 pairwise_cipher;
     /**
      * TLV (tag length value) parameters follows roam_synch_event
      * The TLV's are:
@@ -47346,6 +47348,15 @@ typedef struct {
     A_UINT32 group_cipher;
     /** mcast/group management frames cipher set */
     A_UINT32 group_mgmt_cipher;
+    /**
+     * This fixed_param TLV is followed by the below TLVs:
+     *
+     * RSN IE content which is used during roaming
+     * A_UINT8 rsn_ie[];
+     *
+     * RSNXE IE content which is used during roaming
+     * A_UINT8 rsnxe_ie[];
+     */
 } wmi_roam_preauth_start_event_fixed_param;
 
 typedef struct {
