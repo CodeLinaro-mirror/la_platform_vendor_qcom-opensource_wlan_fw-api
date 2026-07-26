@@ -25004,6 +25004,20 @@ typedef struct {
      */
     A_UINT32 roam_scan_rssi_thresh_5ghz; /* 5 GHz threshold */
     A_UINT32 roam_scan_rssi_thresh_6ghz; /* 6 GHz threshold */
+
+    /* HBR (High-Band Roaming) periodic scan config */
+     /* hbr_periodic_roam_scan_enable:
+      * 0 -> legacy hi-RSSI only
+      * 1 -> activate HBR periodic scan
+      */
+    A_UINT32 hbr_periodic_roam_scan_enable;
+    /* min abs delta RSSI since last scan (default 5 dB) */
+    A_UINT32 hbr_periodic_rssi_delta;
+    /* periodic timer interval when connected on 2.4 GHz */
+    A_UINT32 hbr_periodic_2g_scan_interval_sec;
+    /* periodic timer interval when connected on 5 GHz */
+    A_UINT32 hbr_periodic_5g_scan_interval_sec;
+
     /* The TLVs will follow.
      * wmi_roam_scan_extended_threshold_param extended_param;
      * wmi_roam_earlystop_rssi_thres_param earlystop_param;
