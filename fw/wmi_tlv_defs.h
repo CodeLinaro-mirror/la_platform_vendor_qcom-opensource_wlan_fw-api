@@ -1670,6 +1670,7 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_nan_test_config_cmd_fixed_param,
     WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_cmd_fixed_param,
     WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_evt_fixed_param,
+    WMITLV_TAG_STRUC_wmi_roam_update_auth_status_fixed_param,
 } WMITLV_TAG_ID;
 /*
  * IMPORTANT: Please add _ALL_ WMI Commands Here.
@@ -6760,6 +6761,12 @@ WMITLV_CREATE_PARAM_STRUC(WMI_RTT_PEER_MEAS_CAP_REQ_CMDID);
 #define WMITLV_TABLE_WMI_PDEV_GET_CURRENT_TX_POWER_CMDID(id,op,buf,len) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_cmd_fixed_param, wmi_pdev_get_current_tx_power_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX)
 WMITLV_CREATE_PARAM_STRUC(WMI_PDEV_GET_CURRENT_TX_POWER_CMDID);
+
+/* Update roam authentication status command */
+#define WMITLV_TABLE_WMI_ROAM_UPDATE_AUTH_STATUS_CMDID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_roam_update_auth_status_fixed_param, wmi_roam_update_auth_status_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id, op, buf, len, WMITLV_TAG_ARRAY_FIXED_STRUC, wmi_mac_addr, mld_addr, WMITLV_SIZE_VAR)
+WMITLV_CREATE_PARAM_STRUC(WMI_ROAM_UPDATE_AUTH_STATUS_CMDID);
 
 
 
