@@ -1671,6 +1671,7 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_cmd_fixed_param,
     WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_evt_fixed_param,
     WMITLV_TAG_STRUC_wmi_roam_update_auth_status_fixed_param,
+    WMITLV_TAG_STRUC_wmi_pdev_download_rtt_blob_cmd_fixed_param,
 } WMITLV_TAG_ID;
 /*
  * IMPORTANT: Please add _ALL_ WMI Commands Here.
@@ -2292,6 +2293,8 @@ typedef enum {
     OP(WMI_ATHDIAG_READ_WRITE_CMDID) \
     OP(WMI_RTT_PEER_MEAS_CAP_REQ_CMDID) \
     OP(WMI_PDEV_GET_CURRENT_TX_POWER_CMDID) \
+    OP(WMI_PDEV_DOWNLOAD_RTT_BLOB_CMDID) \
+    OP(WMI_ROAM_UPDATE_AUTH_STATUS_CMDID) \
     /* add new CMD_LIST elements above this line */
 
 
@@ -5158,6 +5161,12 @@ WMITLV_CREATE_PARAM_STRUC(WMI_PDEV_SET_ANTENNA_SWITCH_TABLE_CMDID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_set_ctl_table_cmd_fixed_param, wmi_pdev_set_ctl_table_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_UINT32, A_UINT32, ctl_info, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_PDEV_SET_CTL_TABLE_CMDID);
+
+/* Download RTT delay blob */
+#define WMITLV_TABLE_WMI_PDEV_DOWNLOAD_RTT_BLOB_CMDID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_pdev_download_rtt_blob_cmd_fixed_param, wmi_pdev_download_rtt_blob_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_UINT32, A_UINT32, rtt_info, WMITLV_SIZE_VAR)
+WMITLV_CREATE_PARAM_STRUC(WMI_PDEV_DOWNLOAD_RTT_BLOB_CMDID);
 
 /* Set bios sar table */
 #define WMITLV_TABLE_WMI_PDEV_SET_BIOS_SAR_TABLE_CMDID(id,op,buf,len) \
