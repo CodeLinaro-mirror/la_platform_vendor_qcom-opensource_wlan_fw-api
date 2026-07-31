@@ -426,6 +426,16 @@
 #define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_0_DEST_RING_MAPPING_1_SHFT                                                         4
 #define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_0_DEST_RING_MAPPING_0_SHFT                                                         0
 
+#define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_1_ADDR(x)                                                                 ((x) + 0x8)
+#define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_1_DEST_RING_MAPPING_15_SHFT                                                       28
+#define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_1_DEST_RING_MAPPING_14_SHFT                                                       24
+#define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_1_DEST_RING_MAPPING_13_SHFT                                                       20
+#define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_1_DEST_RING_MAPPING_12_SHFT                                                       16
+#define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_1_DEST_RING_MAPPING_11_SHFT                                                       12
+#define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_1_DEST_RING_MAPPING_10_SHFT                                                        8
+#define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_1_DEST_RING_MAPPING_9_SHFT                                                         4
+#define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_1_DEST_RING_MAPPING_8_SHFT                                                         0
+
 #define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_2_ADDR(x)                                                                 ((x) + 0xc)
 #define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_2_DEST_RING_MAPPING_23_SHFT                                                       28
 #define HWIO_REO_R0_DESTINATION_RING_CTRL_IX_2_DEST_RING_MAPPING_22_SHFT                                                       24
