@@ -5575,9 +5575,15 @@ typedef struct {
      *     will come post WMI_INIT_CMDID and the MLO_SRNG setup has to be
      *     done as part of this cmd.
      *     Refer to the below definitions of
-     *     WMI_RSRC_CFG_HOST_SERVICE_FLAG_CUMAC_CMD_SUPPORT_GET and SET_macros.
+     *     WMI_RSRC_CFG_HOST_SERVICE_FLAG_CUMAC_CMD_SUPPORT_GET and _SET macros.
+     *  Bit 28
+     *     This bit will be set by host to inform FW that the Rx reordering
+     *     is supported in the Passthru mode.
+     *     Refer to the below definitions of
+     *     WMI_RSRC_CFG_HOST_SERVICE_FLAG_PASSTHRU_RX_REORDER_GET and _SET
+     *     macros.
      *
-     *  Bits 31:28 - Reserved
+     *  Bits 31:29 - Reserved
      */
     A_UINT32 host_service_flags;
 
@@ -6262,6 +6268,15 @@ typedef struct {
     WMI_GET_BITS(host_service_flags, 27, 1)
 #define WMI_RSRC_CFG_HOST_SERVICE_FLAG_CUMAC_CMD_SUPPORT_SET(host_service_flags, val) \
     WMI_SET_BITS(host_service_flags, 27, 1, val)
+
+/*
+ * Bit 28: This bit will be set by host to inform FW that the Rx reordering
+ * is supported in Passthru mode.
+ */
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_PASSTHRU_RX_REORDER_GET(host_service_flags) \
+    WMI_GET_BITS(host_service_flags, 28, 1)
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_PASSTHRU_RX_REORDER_SET(host_service_flags, val) \
+    WMI_SET_BITS(host_service_flags, 28, 1, val)
 
 
 #define WMI_RSRC_CFG_CARRIER_CFG_CHARTER_ENABLE_GET(carrier_config) \
