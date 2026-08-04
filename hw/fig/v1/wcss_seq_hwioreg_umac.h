@@ -2355,7 +2355,7 @@
 #define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_ADDR(x)                                                              ((x) + 0x3078)
 #define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_PHYS(x)                                                              ((x) + 0x3078)
 #define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_OFFS                                                                 (0x3078)
-#define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_RMSK                                                                     0xffff
+#define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_RMSK                                                                     0xfffff
 #define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_POR                                                                  0x00000000
 #define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_POR_RMSK                                                             0xffffffff
 #define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_ATTR                                                                              0x3
@@ -2367,7 +2367,7 @@
                 out_dword(HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_ADDR(x),v)
 #define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_OUTM(x,m,v) \
                 out_dword_masked_ns(HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_ADDR(x),m,v,HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_IN(x))
-#define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_HEAD_PTR_BMSK                                                            0xffff
+#define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_HEAD_PTR_BMSK                                                            0xfffff
 #define HWIO_TQM_R2_TQM2SW0_RELEASE_RING_HP_HEAD_PTR_SHFT                                                                 0
 
 #define HWIO_TQM_R0_TQM2SW1_RELEASE_RING_BASE_LSB_ADDR(x)                                                        ((x) + 0x7b4)
@@ -2391,7 +2391,7 @@
 #define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_ADDR(x)                                                              ((x) + 0x3080)
 #define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_PHYS(x)                                                              ((x) + 0x3080)
 #define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_OFFS                                                                 (0x3080)
-#define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_RMSK                                                                     0xffff
+#define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_RMSK                                                                     0xfffff
 #define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_POR                                                                  0x00000000
 #define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_POR_RMSK                                                             0xffffffff
 #define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_ATTR                                                                              0x3
@@ -2403,9 +2403,9 @@
                 out_dword(HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_ADDR(x),v)
 #define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_OUTM(x,m,v) \
                 out_dword_masked_ns(HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_ADDR(x),m,v,HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_IN(x))
-#define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_HEAD_PTR_BMSK                                                            0xffff
+#define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_HEAD_PTR_BMSK                                                            0xfffff
 #define HWIO_TQM_R2_TQM2SW1_RELEASE_RING_HP_HEAD_PTR_SHFT                                                                 0
-#define HWIO_TQM_R0_TQM2SW0_RELEASE_RING_BASE_MSB_RING_SIZE_BMSK                                                   0xffff00
+#define HWIO_TQM_R0_TQM2SW0_RELEASE_RING_BASE_MSB_RING_SIZE_BMSK                                                   0xfffff00
 #define HWIO_TQM_R0_TQM2SW0_RELEASE_RING_BASE_MSB_RING_SIZE_SHFT                                                          8
 #define HWIO_TQM_R0_TQM2SW0_RELEASE_RING_BASE_MSB_RING_BASE_ADDR_MSB_BMSK                                              0xff
 #define HWIO_TQM_R0_TQM2SW0_RELEASE_RING_BASE_MSB_RING_BASE_ADDR_MSB_SHFT                                                 0
