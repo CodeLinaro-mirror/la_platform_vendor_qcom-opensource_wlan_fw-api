@@ -24219,7 +24219,7 @@ typedef struct {
      *   wmi_peer_uhr_omp_npca_params peer_omp_npca_params[];
      *   wmi_peer_uhr_omp_sta_dps_params peer_omp_sta_dps_params[];
      *   wmi_peer_uhr_omp_dso_params  peer_omp_dso_params[];
-     *   Place Holder for other TLVs
+     *   wmi_peer_uhr_omp_emlsr_params peer_omp_emlsr_params[];
      */
 } wmi_peer_uhr_omp_cmd_fixed_param;
 
@@ -24450,6 +24450,55 @@ typedef struct{
     WMI_GET_BITS(_var, 12, 2)
 #define WMI_OMP_PREFERRED_80MHZ_DSO_SUBBAND_SET(_var, _val) \
     WMI_SET_BITS(_var, 12, 2, _val)
+
+
+/*
+ * EMLSR OMP TLV — one entry per WMI_PEER_UHR_OMP_CMDID.
+ * Unlike per-link modes (NPCA, DPS), EMLSR uses a single entry whose
+ * Per-STA Profile is emitted with Link ID = 15 per IEEE P802.11bn-D1.4 §37.29.
+ * The link_bitmap in omp_emlsr_param identifies which links are EMLSR links.
+ */
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_peer_uhr_omp_emlsr_params */
+
+    /*
+     * Bit0:    Enable EMLSR mode   WMI_OMP_EMLSR_ENABLE_GET / _SET
+     * Bit1:    Update EMLSR params WMI_OMP_EMLSR_UPDATE_GET / _SET
+     * Bit2:31: Reserved
+     */
+    A_UINT32 omp_emlsr_caps;
+
+    /*
+     * Bit0:15:  EMLSR Link Bitmap (§9.4.2.361.12)
+     *           WMI_OMP_EMLSR_LINK_BITMAP_GET / _SET
+     * Bit16:21: EMLSR Padding Delay, units of 4 µs (6-bit field)
+     *           WMI_OMP_EMLSR_PADDING_DELAY_GET / _SET
+     * Bit22:27: EMLSR Transition Delay, units of 4 µs (6-bit field)
+     *           WMI_OMP_EMLSR_TRANSITION_DELAY_GET / _SET
+     * Bit28:    In-Device Coexistence Activities (§9.4.2.361.12)
+     *           WMI_OMP_EMLSR_IN_DEV_COEX_ACTIVITIES_GET / _SET
+     * Bit29:31: Reserved
+     */
+    A_UINT32 omp_emlsr_param;
+} wmi_peer_uhr_omp_emlsr_params;
+
+#define WMI_OMP_EMLSR_ENABLE_GET(_var)           WMI_GET_BITS(_var, 0, 1)
+#define WMI_OMP_EMLSR_ENABLE_SET(_var, _val)     WMI_SET_BITS(_var, 0, 1, _val)
+
+#define WMI_OMP_EMLSR_UPDATE_GET(_var)           WMI_GET_BITS(_var, 1, 1)
+#define WMI_OMP_EMLSR_UPDATE_SET(_var, _val)     WMI_SET_BITS(_var, 1, 1, _val)
+
+#define WMI_OMP_EMLSR_LINK_BITMAP_GET(_var)           WMI_GET_BITS(_var, 0, 16)
+#define WMI_OMP_EMLSR_LINK_BITMAP_SET(_var, _val)     WMI_SET_BITS(_var, 0, 16, _val)
+
+#define WMI_OMP_EMLSR_PADDING_DELAY_GET(_var)         WMI_GET_BITS(_var, 16, 6)
+#define WMI_OMP_EMLSR_PADDING_DELAY_SET(_var, _val)   WMI_SET_BITS(_var, 16, 6, _val)
+
+#define WMI_OMP_EMLSR_TRANSITION_DELAY_GET(_var)       WMI_GET_BITS(_var, 22, 6)
+#define WMI_OMP_EMLSR_TRANSITION_DELAY_SET(_var, _val) WMI_SET_BITS(_var, 22, 6, _val)
+
+#define WMI_OMP_EMLSR_IN_DEV_COEX_ACTIVITIES_GET(_var)       WMI_GET_BITS(_var, 28, 1)
+#define WMI_OMP_EMLSR_IN_DEV_COEX_ACTIVITIES_SET(_var, _val) WMI_SET_BITS(_var, 28, 1, _val)
 
 
 typedef struct {

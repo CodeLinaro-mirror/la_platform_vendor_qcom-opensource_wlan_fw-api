@@ -1672,6 +1672,7 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_pdev_get_current_tx_power_evt_fixed_param,
     WMITLV_TAG_STRUC_wmi_roam_update_auth_status_fixed_param,
     WMITLV_TAG_STRUC_wmi_pdev_download_rtt_blob_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_peer_uhr_omp_emlsr_params,
 } WMITLV_TAG_ID;
 /*
  * IMPORTANT: Please add _ALL_ WMI Commands Here.
@@ -3286,7 +3287,8 @@ WMITLV_CREATE_PARAM_STRUC(WMI_PEER_ASSOC_V2_CMDID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_peer_uhr_omp_cmd_fixed_param, wmi_peer_uhr_omp_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_uhr_omp_npca_params, peer_omp_npca_params, WMITLV_SIZE_VAR) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_uhr_omp_sta_dps_params, peer_omp_dps_params, WMITLV_SIZE_VAR) \
-    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_uhr_omp_dso_params, peer_omp_dso_params, WMITLV_SIZE_VAR)
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_uhr_omp_dso_params, peer_omp_dso_params, WMITLV_SIZE_VAR) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_uhr_omp_emlsr_params, peer_omp_emlsr_params, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_PEER_UHR_OMP_CMDID);
 
 /* Peer Set Rate Report Condition Cmd */
