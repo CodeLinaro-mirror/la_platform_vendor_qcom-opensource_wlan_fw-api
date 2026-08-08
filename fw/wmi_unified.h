@@ -23570,9 +23570,17 @@ typedef struct {
         A_UINT32 ml_reconfig__word;
         struct {
             A_UINT32 ml_reconfig: 1,
-                     unused: 31;
+                     /* bit 1: crash recovery reconfig */
+                     ml_recovery_reconfig:  1,
+                     unused: 30;
         };
     };
+    /* new_master_ll_id:
+     * For recovery-reconfig only.
+     * Logical link index of the new master after master migration.
+     * 0xFF = non-master crash (master link unchanged).
+     */
+    A_UINT32 new_master_ll_id;
 } wmi_peer_assoc_mlo_params;
 
 typedef struct {
