@@ -39518,6 +39518,15 @@ typedef struct {
 #define WMI_ATF_GROUP_SET_GROUP_SCHED_POLICY(atf_group_flags,val)  \
     WMI_SET_BITS(atf_group_flags,WMI_ATF_GROUP_SCHED_POLICY_BIT_POS,WMI_ATF_GROUP_SCHED_POLICY_NUM_BITS,val)
 
+#define WMI_ATF_GROUP_E2E_QOS_ENABLE_BIT_POS      4
+#define WMI_ATF_GROUP_E2E_QOS_ENABLE_NUM_BITS     1
+
+#define WMI_ATF_GROUP_GET_E2E_QOS_ENABLE(atf_group_flags)  \
+    WMI_GET_BITS(atf_group_flags,WMI_ATF_GROUP_E2E_QOS_ENABLE_BIT_POS,WMI_ATF_GROUP_E2E_QOS_ENABLE_NUM_BITS)
+
+#define WMI_ATF_GROUP_SET_E2E_QOS_ENABLE(atf_group_flags,val)  \
+    WMI_SET_BITS(atf_group_flags,WMI_ATF_GROUP_E2E_QOS_ENABLE_BIT_POS,WMI_ATF_GROUP_E2E_QOS_ENABLE_NUM_BITS,val)
+
 typedef struct {
     /** TLV tag and len; tag equals
      *  WMITLV_TAG_STRUC_wmi_atf_group_info */
@@ -39571,7 +39580,10 @@ typedef struct {
     /* atf_group_flags
      *  Bits 0-3  - Group Schedule Policy (Fair/Strict/Fair with upper bound)
      *              Refer to WMI_ATF_SSID_ definitions
-     *  Bit  4-31 - Reserved (Shall be zero)
+     *  Bit  4    - e2e_qos_enable - indicates whether End2End QoS is
+     *              enabled for this group.
+     *              Refer to WMI_ATF_GROUP_GET/SET_E2E_QOS_ENABLE.
+     *  Bits 5-31 - Reserved (Shall be zero)
      */
     A_UINT32 atf_group_flags;
     /* atf_total_num_peers
@@ -39591,6 +39603,13 @@ typedef struct {
      * (from 0-1000, in per mille units)
      */
     A_UINT32 atf_total_implicit_peer_units;
+    /* grp_priority
+     * Used for End2End QoS to denote the strict priority order for the
+     * current group, relative to other ATF groups.
+     * Valid values range from 1 to 16 (1 being the highest priority).
+     * Only meaningful when E2E_qos_enable is set in atf_group_flags.
+     */
+    A_UINT32 grp_priority;
 } wmi_atf_group_info_v2;
 
 typedef struct {
@@ -39610,6 +39629,25 @@ typedef struct {
  * configured for the group.
  * When WMM ATF is not configured for a peer all values shall be 0.
  */
+
+#define WMI_ATF_GROUP_WMM_AC_PRIORITY_BIT_POS         0
+#define WMI_ATF_GROUP_WMM_AC_PRIORITY_NUM_BITS        4
+
+#define WMI_ATF_GROUP_WMM_AC_GET_PRIORITY(ac_priority)  \
+    WMI_GET_BITS(ac_priority,WMI_ATF_GROUP_WMM_AC_PRIORITY_BIT_POS,WMI_ATF_GROUP_WMM_AC_PRIORITY_NUM_BITS)
+
+#define WMI_ATF_GROUP_WMM_AC_SET_PRIORITY(ac_priority,val)  \
+    WMI_SET_BITS(ac_priority,WMI_ATF_GROUP_WMM_AC_PRIORITY_BIT_POS,WMI_ATF_GROUP_WMM_AC_PRIORITY_NUM_BITS,val)
+
+#define WMI_ATF_GROUP_WMM_AC_E2E_QOS_ENABLE_BIT_POS   4
+#define WMI_ATF_GROUP_WMM_AC_E2E_QOS_ENABLE_NUM_BITS  1
+
+#define WMI_ATF_GROUP_WMM_AC_GET_E2E_QOS_ENABLE(ac_priority)  \
+    WMI_GET_BITS(ac_priority,WMI_ATF_GROUP_WMM_AC_E2E_QOS_ENABLE_BIT_POS,WMI_ATF_GROUP_WMM_AC_E2E_QOS_ENABLE_NUM_BITS)
+
+#define WMI_ATF_GROUP_WMM_AC_SET_E2E_QOS_ENABLE(ac_priority,val)  \
+    WMI_SET_BITS(ac_priority,WMI_ATF_GROUP_WMM_AC_E2E_QOS_ENABLE_BIT_POS,WMI_ATF_GROUP_WMM_AC_E2E_QOS_ENABLE_NUM_BITS,val)
+
 typedef struct {
     /** TLV tag and len; tag equals
      *  WMITLV_TAG_STRUC_wmi_atf_group_wmm_ac_info
@@ -39620,6 +39658,18 @@ typedef struct {
     A_UINT32 atf_units_bk;
     A_UINT32 atf_units_vi;
     A_UINT32 atf_units_vo;
+    /* ac_priority
+     * Bits 0-3  - AC priority: used for end2end QoS to denote the strict
+     *             priority order for the current AC, relative to other
+     *             ATF group WMM ACs. Valid values range from 1 to 4
+     *             (1 being the highest priority).
+     *             Refer to WMI_ATF_GROUP_WMM_AC_GET/SET_PRIORITY.
+     * Bit  4    - e2e_qos_enable: indicates whether end2end QoS is
+     *             enabled for this AC.
+     *             Refer to WMI_ATF_GROUP_WMM_AC_GET/SET_E2E_QOS_ENABLE.
+     * Bits 5-31 - Reserved (Shall be zero)
+     */
+    A_UINT32 ac_priority;
 } wmi_atf_group_wmm_ac_info;
 
 typedef struct {
