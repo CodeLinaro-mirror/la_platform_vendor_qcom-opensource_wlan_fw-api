@@ -57684,6 +57684,7 @@ typedef enum {
 #define  WMI_SMD_ROAM_FLAG_DL_SN_NOT_TRANSFFERED 0x01
 #define  WMI_SMD_ROAM_FLAG_UL_SN_NOT_TRANSFFERED 0x02
 #define  WMI_SMD_ROAM_FLAG_DISABLE_LINK          0x04
+#define  WMI_SMD_ROAM_FLAG_TAP_ROAMING           0x08
 
 #define WMI_SMD_ROAM_PEER_GET_MLSN(dword) \
         WMI_GET_BITS(dword, 0, 16)
