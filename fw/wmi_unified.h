@@ -7884,6 +7884,10 @@ typedef struct {
     /** freq in MHz of the channel on which this frame was received */
     A_UINT32 chan_freq;
 
+    /** tsf of received rx packet in host_qtime */
+    A_UINT32 qtimer_l32;
+    A_UINT32 qtimer_u32;
+
 /* This TLV is followed by array of bytes:
  *   A_UINT8 bufp[]; <-- management frame buffer
  */
