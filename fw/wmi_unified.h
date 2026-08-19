@@ -636,6 +636,8 @@ typedef enum {
     WMI_PDEV_SET_CUMAC_CHIP_CMDID,
     /** Get current TX power for the connected channel */
     WMI_PDEV_GET_CURRENT_TX_POWER_CMDID,
+    /** Download RTT delay blob */
+    WMI_PDEV_DOWNLOAD_RTT_BLOB_CMDID,
 
     /* VDEV (virtual device) specific commands */
     /** vdev create */
@@ -1076,6 +1078,8 @@ typedef enum {
     WMI_ROAM_SMD_CONFIG_CMDID,
     /** SMD preparation completion status command */
     WMI_ROAM_SMD_START_STATUS_CMDID,
+    /** update roam authentication status to firmware */
+    WMI_ROAM_UPDATE_AUTH_STATUS_CMDID,
 
     /** offload scan specific commands */
     /** set offload scan AP profile   */
@@ -5571,9 +5575,15 @@ typedef struct {
      *     will come post WMI_INIT_CMDID and the MLO_SRNG setup has to be
      *     done as part of this cmd.
      *     Refer to the below definitions of
-     *     WMI_RSRC_CFG_HOST_SERVICE_FLAG_CUMAC_CMD_SUPPORT_GET and SET_macros.
+     *     WMI_RSRC_CFG_HOST_SERVICE_FLAG_CUMAC_CMD_SUPPORT_GET and _SET macros.
+     *  Bit 28
+     *     This bit will be set by host to inform FW that the Rx reordering
+     *     is supported in the Passthru mode.
+     *     Refer to the below definitions of
+     *     WMI_RSRC_CFG_HOST_SERVICE_FLAG_PASSTHRU_RX_REORDER_GET and _SET
+     *     macros.
      *
-     *  Bits 31:28 - Reserved
+     *  Bits 31:29 - Reserved
      */
     A_UINT32 host_service_flags;
 
@@ -6258,6 +6268,15 @@ typedef struct {
     WMI_GET_BITS(host_service_flags, 27, 1)
 #define WMI_RSRC_CFG_HOST_SERVICE_FLAG_CUMAC_CMD_SUPPORT_SET(host_service_flags, val) \
     WMI_SET_BITS(host_service_flags, 27, 1, val)
+
+/*
+ * Bit 28: This bit will be set by host to inform FW that the Rx reordering
+ * is supported in Passthru mode.
+ */
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_PASSTHRU_RX_REORDER_GET(host_service_flags) \
+    WMI_GET_BITS(host_service_flags, 28, 1)
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_PASSTHRU_RX_REORDER_SET(host_service_flags, val) \
+    WMI_SET_BITS(host_service_flags, 28, 1, val)
 
 
 #define WMI_RSRC_CFG_CARRIER_CFG_CHARTER_ENABLE_GET(carrier_config) \
@@ -25004,6 +25023,20 @@ typedef struct {
      */
     A_UINT32 roam_scan_rssi_thresh_5ghz; /* 5 GHz threshold */
     A_UINT32 roam_scan_rssi_thresh_6ghz; /* 6 GHz threshold */
+
+    /* HBR (High-Band Roaming) periodic scan config */
+     /* hbr_periodic_roam_scan_enable:
+      * 0 -> legacy hi-RSSI only
+      * 1 -> activate HBR periodic scan
+      */
+    A_UINT32 hbr_periodic_roam_scan_enable;
+    /* min abs delta RSSI since last scan (default 5 dB) */
+    A_UINT32 hbr_periodic_rssi_delta;
+    /* periodic timer interval when connected on 2.4 GHz */
+    A_UINT32 hbr_periodic_2g_scan_interval_sec;
+    /* periodic timer interval when connected on 5 GHz */
+    A_UINT32 hbr_periodic_5g_scan_interval_sec;
+
     /* The TLVs will follow.
      * wmi_roam_scan_extended_threshold_param extended_param;
      * wmi_roam_earlystop_rssi_thres_param earlystop_param;
@@ -26418,6 +26451,8 @@ typedef enum
                                                            ** WMI_ROAM_REASON_HO_FAILED is event expected */
 #define WMI_ROAM_NOTIF_SCAN_END          0xc /** indicate roam scan end, notif_params to be sent as WMI_ROAM_TRIGGER_REASON_ID */
 #define WMI_ROAM_NOTIF_ROAM_SMD_START    0xd /** indicate that SMD BSS transtion is started, notif_params1 to be sent as requested setup ieee links bitmap for target AP MLD */
+#define WMI_ROAM_NOTIF_AUTH_SUCCESS      0xe /** indicate roam authentication is successful, notif_params to be sent as WMI_ROAM_TRIGGER_REASON_ID */
+#define WMI_ROAM_NOTIF_AUTH_FAIL         0xf /** indicate roam authentication has failed, notif_params to be sent as WMI_ROAM_TRIGGER_REASON_ID, notif_params1 to be sent as failure status code */
 
 /**whenever RIC request information change, host driver should pass all ric related information to firmware (now only support tsepc)
 * Once, 11r roaming happens, firmware can generate RIC request in reassoc request based on this information
@@ -34558,6 +34593,8 @@ typedef struct {
      * Ex: SAE PW ID KDE data
      */
     A_UINT32 kde_length;
+    /* IEEE value for pairwise cipher */
+    A_UINT32 pairwise_cipher;
     /**
      * TLV (tag length value) parameters follows roam_synch_event
      * The TLV's are:
@@ -38795,6 +38832,20 @@ typedef struct {
      * A_UINT32 ctl_info[1];
      */
 } wmi_pdev_set_ctl_table_cmd_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_pdev_download_rtt_blob_cmd_fixed_param */
+    /** pdev_id for identifying the MAC
+     * See macros starting with WMI_PDEV_ID_ for values.
+     */
+    A_UINT32 pdev_id;
+    /** len (in bytes) of RTT blob fragment (incl. fragment header) */
+    A_UINT32 rtt_len;
+    /* rtt array (len adjusted to number of words).
+     * Following this structure is the TLV:
+     * A_UINT32 rtt_info[1];
+     */
+} wmi_pdev_download_rtt_blob_cmd_fixed_param;
 
 typedef struct {
     A_UINT32    tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_pdev_set_bios_sar_cmd_fixed_param */
@@ -44295,6 +44346,8 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_RTT_PEER_MEAS_CAP_REQ_CMDID);
         WMI_RETURN_STRING(WMI_NAN_TEST_CONFIG_CMDID);
         WMI_RETURN_STRING(WMI_PDEV_GET_CURRENT_TX_POWER_CMDID);
+        WMI_RETURN_STRING(WMI_ROAM_UPDATE_AUTH_STATUS_CMDID);
+        WMI_RETURN_STRING(WMI_PDEV_DOWNLOAD_RTT_BLOB_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
@@ -47346,6 +47399,15 @@ typedef struct {
     A_UINT32 group_cipher;
     /** mcast/group management frames cipher set */
     A_UINT32 group_mgmt_cipher;
+    /**
+     * This fixed_param TLV is followed by the below TLVs:
+     *
+     * RSN IE content which is used during roaming
+     * A_UINT8 rsn_ie[];
+     *
+     * RSNXE IE content which is used during roaming
+     * A_UINT8 rsnxe_ie[];
+     */
 } wmi_roam_preauth_start_event_fixed_param;
 
 typedef struct {
@@ -48609,6 +48671,21 @@ typedef struct {
      * A_UINT8 kck[];
      */
 } wmi_roam_smd_start_status_cmd_fixed_param;
+
+/** WMI_ROAM_UPDATE_AUTH_STATUS_CMDID : update roam authentication status to firmware */
+typedef struct {
+    A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_roam_update_auth_status_fixed_param */
+    /** unique id identifying the VDEV */
+    A_UINT32 vdev_id;
+    /** BSSID of the candidate AP for which auth status is being updated */
+    wmi_mac_addr candidate_ap_bssid;
+    /*
+     * This fixed_param TLV is followed by the below optional TLV:
+     * wmi_mac_addr mld_addr[0,1];
+     *     optional TLV, only present for MLO APs;
+     *     if the AP is not MLO the array length should be 0.
+     */
+} wmi_roam_update_auth_status_fixed_param;
 
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_get_big_data_cmd_fixed_param */
