@@ -24849,6 +24849,23 @@ typedef struct _wlan_dcs_im_tgt_stats {
     /** pdev id **/
     A_UINT32 pdev_id;  /* unique pdev id for DCS stats info */
     /*------*/
+
+    /*
+     * Additional per-vdev statistics used for SAP home-channel selection
+     * (interference avoidance).
+     */
+
+    /** TX retransmission rate */
+    A_UINT32 tx_retransmission_rate;
+
+    /** TX packet loss rate */
+    A_UINT32 tx_packet_loss_rate;
+
+    /** RX error rate */
+    A_UINT32 rx_error_rate;
+
+    /** RX duplicate reception rate */
+    A_UINT32 rx_duplicate_reception_rate;
 } wlan_dcs_im_tgt_stats_t;
 
 typedef struct wlan_dcs_awgn_info {
