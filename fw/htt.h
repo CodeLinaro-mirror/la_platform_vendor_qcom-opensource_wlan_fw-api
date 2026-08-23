@@ -288,9 +288,10 @@
  * 3.158 Add more fields in htt_tx_monitor_cfg_t.
  * 3.159 Add enable_sa_search and enable_da_search flags in htt_ast_info_t.
  * 3.160 Add is_txop_intent_valid and qmid fields in MPDUQ_OR_MSDUQ_INFO.
+ * 3.161 Add rxdma1_status_ring fields in rx_ring_selection_cfg.
  */
 #define HTT_CURRENT_VERSION_MAJOR 3
-#define HTT_CURRENT_VERSION_MINOR 160
+#define HTT_CURRENT_VERSION_MINOR 161
 
 #define HTT_NUM_TX_FRAG_DESC  1024
 
@@ -6554,7 +6555,15 @@ PREPACK struct htt_rx_ring_selection_cfg_t {
              rxmon_md_ctrl_hdrlen      : 2,
              rxmon_md_mgmt_hdrlen      : 2,
              rxmon_enable_hdr_per_ppdu : 1,
-             rxmon_rsvd                : 7;
+             rxmon_fp_fpmo_data_mpdu_filter_in_enable: 1,
+             rxmon_rsvd                : 6;
+
+    A_UINT32 rxdma1_status_ring_fp_data_mpdu_tlv_filter_in_control_ix0;
+    A_UINT32 rxdma1_status_ring_fpmo_data_mpdu_tlv_filter_in_control_ix0;
+    A_UINT32
+        rxdma1_status_ring_fp_data_mpdu_tlv_filter_in_control_ix1   : 6,
+        rxdma1_status_ring_fpmo_data_mpdu_tlv_filter_in_control_ix1 : 6,
+        data_mpdu_tlv_filter_in_control_reserved : 20;
 } POSTPACK;
 
 /**
@@ -7393,6 +7402,66 @@ enum htt_reg_write_selection {
                 ((_var) |= ((_val) << HTT_RX_RING_SELECTION_CFG_RXMDN_ENABLE_HEADER_PER_PPDU_S)); \
             } while (0)
 
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_FPMO_DATA_MPDU_FILTER_IN_ENABLE_M  0x02000000
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_FPMO_DATA_MPDU_FILTER_IN_ENABLE_S  25
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_FPMO_DATA_MPDU_FILTER_IN_ENABLE_GET(_var) \
+    (((_var) & HTT_RX_RING_SELECTION_CFG_RXMON_FP_FPMO_DATA_MPDU_FILTER_IN_ENABLE_M) >> \
+     HTT_RX_RING_SELECTION_CFG_RXMON_FP_FPMO_DATA_MPDU_FILTER_IN_ENABLE_S)
+
+#define HTT_RX_RING_SELECTION_CFG_RXMON_FP_FPMO_DATA_MPDU_FILTER_IN_ENABLE_SET(_var, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_RX_RING_SELECTION_CFG_RXMON_FP_FPMO_DATA_MPDU_FILTER_IN_ENABLE, _val); \
+        ((_var) |= (((_val) & 0x1) << HTT_RX_RING_SELECTION_CFG_RXMON_FP_FPMO_DATA_MPDU_FILTER_IN_ENABLE_S)); \
+    } while (0)
+
+#define RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX0_M  0xFFFFFFFF
+#define RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX0_S  0
+
+#define RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX0_GET(_var) \
+    ((_var) & RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX0_M)
+
+#define RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX0_SET(_var, _val) \
+    do { \
+        (_var) = (_val); \
+    } while (0)
+
+#define RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX0_M  0xFFFFFFFF
+#define RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX0_S  0
+
+#define RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX0_GET(_var) \
+    ((_var) & RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX0_M)
+
+#define RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX0_SET(_var, _val) \
+    do { \
+        (_var) = (_val); \
+    } while (0)
+
+#define RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_M  0x0000003F
+#define RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_S  0
+
+#define RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_GET(_var) \
+    (((_var) & RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_M) >> \
+     RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_S)
+
+#define RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_SET(_var, _val) \
+    do { \
+        (_var) &= ~RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_M; \
+        (_var) |= (((_val) & 0x3F) << RXDMA1_STATUS_RING_FP_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_S); \
+    } while (0)
+
+#define RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_M  0x00000FC0
+#define RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_S  6
+
+#define RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_GET(_var) \
+    (((_var) & RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_M) >> \
+     RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_S)
+
+#define RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_SET(_var, _val) \
+    do { \
+        (_var) &= ~RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_M; \
+        (_var) |= (((_val) & 0x3F) << RXDMA1_STATUS_RING_FPMO_DATA_MPDU_TLV_FILTER_IN_CONTROL_IX1_S); \
+    } while (0)
 
 /*
  * Subtype based MGMT frames enable bits.
