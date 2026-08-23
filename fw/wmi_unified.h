@@ -29130,6 +29130,9 @@ typedef enum
      */
     WMI_VENDOR_OUI_ACTION_FORCE_TX_NULL_FRAME_ON_P2P = 19,
 
+    /* Whitelist action: AP whose OUI matches is known-good for APPM */
+    WMI_VENDOR_OUI_ACTION_ENABLE_APPM = 20,
+
 
     /* Add any action before this line */
     WMI_VENDOR_OUI_ACTION_MAX_ACTION_ID,
@@ -56575,6 +56578,16 @@ typedef struct {
 #define WMI_PEER_ACTIVE_TRAFFIC_TYPE_LIVECAST_S                  21
 /* bits 22-31 are reserved for new interactive traffic types */
 
+typedef enum {
+    WMI_APP_STATE_UNKNOWN    = 0,
+    WMI_APP_STATE_IDLE       = 1,
+    WMI_APP_STATE_LOADING    = 2,
+    WMI_APP_STATE_LOBBY      = 3,
+    WMI_APP_STATE_ACTIVE     = 4,
+    WMI_APP_STATE_PAUSED     = 5,
+    WMI_APP_STATE_TERMINATED = 6,
+} WMI_APP_STATE;
+
 typedef struct {
     A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_peer_active_traffic_map_cmd_fixed_param */
     A_UINT32 vdev_id;
@@ -56586,6 +56599,9 @@ typedef struct {
      * bits within the bitmap correspond to which traffic types.
      */
     A_UINT32 active_traffic_map;
+    A_UINT32 app_state;        /* WMI_APP_STATE enum */
+    A_UINT32 expected_latency; /* milliseconds units */
+    A_UINT32 measured_latency; /* milliseconds units */
 } wmi_peer_active_traffic_map_cmd_fixed_param;
 
 
