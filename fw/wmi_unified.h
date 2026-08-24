@@ -8855,6 +8855,23 @@ typedef struct {
 
 /* WMI support for setting ratemask in target */
 
+/*
+ * Bit positions used for type=0 (cck/ofdm)
+ * wmi_vdev_config_ratemask_cmd_fixed_param
+ */
+#define WMI_CCK_11_MBPS_BITMASK_POS  0
+#define WMI_CCK_5_5_MBPS_BITMASK_POS 1
+#define WMI_CCK_2_MBPS_BITMASK_POS   2
+#define WMI_CCK_1_MBPS_BITMASK_POS   3
+#define WMI_OFDM_48_MBPS_BITMASK_POS 4
+#define WMI_OFDM_24_MBPS_BITMASK_POS 5
+#define WMI_OFDM_12_MBPS_BITMASK_POS 6
+#define WMI_OFDM_6_MBPS_BITMASK_POS  7
+#define WMI_OFDM_54_MBPS_BITMASK_POS 8
+#define WMI_OFDM_36_MBPS_BITMASK_POS 9
+#define WMI_OFDM_18_MBPS_BITMASK_POS 10
+#define WMI_OFDM_9_MBPS_BITMASK_POS  11
+
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_config_ratemask_fixed_param */
     A_UINT32 vdev_id;
@@ -8865,7 +8882,11 @@ typedef struct {
      * 3 - HE
      * 4 - EHT
      *
-     * Rate Bit mask format:
+     * Rate Bit mask format for type=0 (cck/ofdm):
+     *     - See WMI_{CCK,OFDM}_[0-9]+_MBPS_BITMASK_POS macros defined above.
+     *     - Bit 0 of mask_lower32 corresponds to CCK 11 Mbps, Bit 1
+     *       corresponds to CCK 5.5 Mbps, etc.
+     * Rate Bit mask format HT, VHT, HE:
      *     <MCS in NSS MAX> ...
      *     <MCS MAX, ..., 2, 1, 0 : NSS2>
      *     <MCS MAX, ..., 2, 1, 0 : NSS1>
