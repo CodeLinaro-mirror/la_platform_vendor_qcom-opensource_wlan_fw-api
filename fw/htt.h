@@ -287,9 +287,10 @@
  * 3.157 Add TCL_METADATA_V3 defs.
  * 3.158 Add more fields in htt_tx_monitor_cfg_t.
  * 3.159 Add enable_sa_search and enable_da_search flags in htt_ast_info_t.
+ * 3.160 Add is_txop_intent_valid and qmid fields in MPDUQ_OR_MSDUQ_INFO.
  */
 #define HTT_CURRENT_VERSION_MAJOR 3
-#define HTT_CURRENT_VERSION_MINOR 159
+#define HTT_CURRENT_VERSION_MINOR 160
 
 #define HTT_NUM_TX_FRAG_DESC  1024
 
@@ -12520,7 +12521,12 @@ PREPACK struct htt_h2t_mpduq_and_msduq_info_hdr {
  *          b'20:20 - sam_msduq_sched_eligible: Indicates that this SAM MSDUQ
  *                    is eligible for autonomous SAM scheduling. The value in
  *                    this field is ignored if sam_msduq_allocated is 0.
- *          b'31:21 – reserved
+ *          b'21:21 - is_txop_intent_valid: Indicates whether qmid is valid and
+ *                    to indicate to FW to start using the msduq for end-to-end
+ *                    forwarding.
+ *          b'29:22 - qmid: The queue manager ID (QMID) assigned for this
+ *                    MSDUQ. Only valid if is_txop_intent_valid is 1.
+ *          b'31:30 – reserved
  * Additional reserved dwords for future use cases
  */
 
@@ -12616,7 +12622,9 @@ PREPACK struct htt_h2t_mpduq_or_msduq_info {
                      sam_msduq_id:            13, /* bits 17:5  */
                      sam_msduq_priority:       2, /* bits 19:18 */
                      sam_msduq_sched_eligible: 1, /* bit     20 */
-                     reserved2a:              11; /* bits 31:21 */
+                     is_txop_intent_valid:     1, /* bit     21 */
+                     qmid:                     8, /* bits 29:22 */
+                     reserved2a:               2; /* bits 31:30 */
             A_UINT32 reserved2b;                  /* bits 31:0  */
             A_UINT32 reserved2c;                  /* bits 31:0  */
             A_UINT32 reserved2d;                  /* bits 31:0  */
@@ -12879,6 +12887,28 @@ PREPACK struct htt_h2t_mpduq_or_msduq_info {
     do {                                                     \
         HTT_CHECK_SET_VAL(HTT_H2T_MSG_TYPE_MSDUQ_INFO_SAM_MSDUQ_SCHED_ELIGIBLE, _val);  \
         ((_var) |= ((_val) << HTT_H2T_MSG_TYPE_MSDUQ_INFO_SAM_MSDUQ_SCHED_ELIGIBLE_S)); \
+    } while (0)
+
+#define HTT_H2T_MSG_TYPE_MSDUQ_INFO_IS_TXOP_INTENT_VALID_M    0x00200000
+#define HTT_H2T_MSG_TYPE_MSDUQ_INFO_IS_TXOP_INTENT_VALID_S            21
+#define HTT_H2T_MSG_TYPE_MSDUQ_INFO_IS_TXOP_INTENT_VALID_GET(_var) \
+        (((_var) & HTT_H2T_MSG_TYPE_MSDUQ_INFO_IS_TXOP_INTENT_VALID_M) >> \
+                HTT_H2T_MSG_TYPE_MSDUQ_INFO_IS_TXOP_INTENT_VALID_S)
+#define HTT_H2T_MSG_TYPE_MSDUQ_INFO_IS_TXOP_INTENT_VALID_SET(_var, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_H2T_MSG_TYPE_MSDUQ_INFO_IS_TXOP_INTENT_VALID, _val);  \
+        ((_var) |= ((_val) << HTT_H2T_MSG_TYPE_MSDUQ_INFO_IS_TXOP_INTENT_VALID_S)); \
+    } while (0)
+
+#define HTT_H2T_MSG_TYPE_MSDUQ_INFO_QMID_M    0x3FC00000
+#define HTT_H2T_MSG_TYPE_MSDUQ_INFO_QMID_S            22
+#define HTT_H2T_MSG_TYPE_MSDUQ_INFO_QMID_GET(_var) \
+        (((_var) & HTT_H2T_MSG_TYPE_MSDUQ_INFO_QMID_M) >> \
+                 HTT_H2T_MSG_TYPE_MSDUQ_INFO_QMID_S)
+#define HTT_H2T_MSG_TYPE_MSDUQ_INFO_QMID_SET(_var, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_H2T_MSG_TYPE_MSDUQ_INFO_QMID, _val);  \
+        ((_var) |= ((_val) << HTT_H2T_MSG_TYPE_MSDUQ_INFO_QMID_S)); \
     } while (0)
 
 
