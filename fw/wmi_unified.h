@@ -43687,10 +43687,24 @@ typedef enum {
 
 #define WMI_THERMAL_CLIENT_MAX_PRIORITY 10
 
+typedef enum {
+    WMI_THERM_THROT_DISABLE = 0, /* disable thermal throttling */
+
+    /* enable default (duty-cycle) throttling */
+    WMI_THERM_THROT_ENABLE_DEFAULT_THROTTLE = 1,
+
+    /* enable utilization-based throttling */
+    WMI_THERM_THROT_ENABLE_UTIL_THROTTLE    = 2,
+} WMI_THERM_THROT_ENABLE;
+
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_therm_throt_config_request_fixed_param */
     A_UINT32 pdev_id;          /* config for each pdev */
-    A_UINT32 enable;           /* 0:disable, 1:enable */
+    /* enable:
+     * Refer to WMI_THERM_THROT_ENABLE.
+     * 0:disable, 1:enable default throttling, 2:enable util-based throttling
+     */
+    A_UINT32 enable;
     A_UINT32 dc;               /* duty cycle in ms */
     A_UINT32 dc_per_event;     /* how often (after how many duty cycles) the FW sends stats to host */
     A_UINT32 therm_throt_levels; /* Indicates the number of thermal zone configuration */
