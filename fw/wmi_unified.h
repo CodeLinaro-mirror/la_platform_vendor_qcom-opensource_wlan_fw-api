@@ -46807,6 +46807,7 @@ typedef enum _WMI_DEL_TWT_STATUS_T {
     WMI_DEL_TWT_STATUS_MLO_LINK_INACTIVE,   /* Teardown due to link going to inactive */
     WMI_DEL_TWT_STATUS_2G_TWT_NOT_ENABLED,  /* Teardown due to 2.4 GHz TWT not enabled */
     WMI_DEL_TWT_STATUS_SCAN_STARTED,        /* Teardown due to scan started */
+    WMI_DEL_TWT_STATUS_MAC_MIGRATION,       /* Teardown due to MAC migration */
 } WMI_DEL_TWT_STATUS_T;
 
 typedef struct {
