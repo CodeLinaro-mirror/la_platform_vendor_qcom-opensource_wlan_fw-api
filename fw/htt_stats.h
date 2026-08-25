@@ -12169,8 +12169,10 @@ typedef struct {
      * Error count per error source;
      * [0] = unknown; [1] = LSIG; [2] = HTSIG; [3] = VHTSIG; [4] = HESIG;
      * [5] = RXTD_OTA; [6] = RXTD_FATAL; [7] = DEMF; [8] = ROBE;
-     * [9] = PMI; [10] = TXFD; [11] = TXTD; [12] = PHYRF
-     * [13-19]=RSVD
+     * [9] = PMI; [10] = TXFD; [11] = TXTD; [12] = PHYRF;
+     * [13-15] = RX_CCK;
+     * [16] = EHTSIG; [17] = USIG;
+     * [18-19]=RSVD
      */
     A_UINT32 per_blk_err_cnt[HTT_MAX_PER_BLK_ERR_CNT];
     /** rx_ota_err_cnt -
