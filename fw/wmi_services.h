@@ -885,6 +885,9 @@ typedef  enum  {
      *  Uses existing WMI_RTT_PEER_MEAS_* for request-based ranging. */
     WMI_SERVICE_NAN_RANGING_OFFLOAD_SUPPORT = 525,
 
+    /* FW supports TX utilization-based thermal throttling */
+    WMI_SERVICE_UTIL_BASED_THROTTLING = 526,
+
 
     WMI_MAX_EXT2_SERVICE
 
