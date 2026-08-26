@@ -2778,6 +2778,14 @@ typedef enum {
      * in the cfg80211 offload interface.
      */
     WMI_NAN_DISC_SERVICE_REQ_TERMINATED_EVENTID,
+    /**
+     * NAN periodic/continuous ranging result event.
+     * Sent periodically after each RTT burst completes for a
+     * continuous ranging session (IS_CONTINUOUS_RANGING_SET).
+     * Separate from WMI_NAN_DISC_MATCH_EVENTID which is sent
+     * once on disc match only.
+     */
+    WMI_NAN_DISC_CONTINUOUS_RANGE_RESULT_EVENTID,
 
     /* Coex Event */
     WMI_COEX_REPORT_ANTENNA_ISOLATION_EVENTID = WMI_EVT_GRP_START_ID(WMI_GRP_COEX),
@@ -33016,6 +33024,12 @@ typedef struct {
  * Maps to NL80211_NAN_FUNC_PUBLISH / SUBSCRIBE / FOLLOW_UP.
  */
 typedef enum {
+    /** WMI_NAN_DISC_SERVICE_REQ_UNSPECIFIED:
+     * Service type not specified by host; FW resolves via cookie lookup.
+     * Used in WMI_NAN_DISC_CANCEL_SERVICE_REQ_CMDID when host driver
+     * does not know the service type and relies on FW to determine it.
+     */
+    WMI_NAN_DISC_SERVICE_REQ_UNSPECIFIED = 0,
     WMI_NAN_DISC_SERVICE_REQ_PUBLISH    = 1,
     WMI_NAN_DISC_SERVICE_REQ_SUBSCRIBE  = 2,
     WMI_NAN_DISC_SERVICE_REQ_FOLLOW_UP  = 3,
@@ -33065,6 +33079,13 @@ typedef enum {
  * Maps to NL80211_ATTR_NAN_FUNC_SDEA_CTRL / cfg80211_nan_func.sdea_ctrl.
  *   Bit 2 : Data Path Required
  *   Bit 6 : Security Required
+ *   Bit 7 : Ranging Required
+ *           Publisher:  set bit 7 to advertise ranging support OTA in SDF SDEA.
+ *                       No ranging_config TLV needed — publisher is responder
+ *                       only.
+ *           Subscriber: set bit 7 AND send ranging_config TLV with
+ *                       interval/geofence params. FW enforces bit 7 from TLV
+ *                       if host omits it.
  */
 #define WMI_NAN_DISC_SDEA_CTRL_GET_DATA_PATH_REQ(sdea) \
     WMI_GET_BITS(sdea, 2, 1)
@@ -33074,6 +33095,10 @@ typedef enum {
     WMI_GET_BITS(sdea, 6, 1)
 #define WMI_NAN_DISC_SDEA_CTRL_SET_SECURITY_REQ(sdea, v) \
     WMI_SET_BITS(sdea, 6, 1, v)
+#define WMI_NAN_DISC_SDEA_CTRL_GET_RANGING_REQ(sdea) \
+    WMI_GET_BITS(sdea, 7, 1)
+#define WMI_NAN_DISC_SDEA_CTRL_SET_RANGING_REQ(sdea, v) \
+    WMI_SET_BITS(sdea, 7, 1, v)
 
 /*
  * service_req_flags field bit accessors for
@@ -33185,7 +33210,9 @@ typedef struct {
     wmi_mac_addr followup_dest;
     /**
      * SDEA control field bitmap; use WMI_NAN_DISC_SDEA_CTRL_GET/SET macros;
-     * bit2=Data Path Required, bit6=Security Required
+     * bit2=Data Path Required, bit6=Security Required, bit7=Ranging Required.
+     * For ranging: Publisher sets bit7 only (no ranging_config TLV needed).
+     *              Subscriber sets bit7 AND sends ranging_config TLV.
      */
     A_UINT32 sdea_ctrl;
     /**
@@ -33247,6 +33274,81 @@ typedef struct {
      *                               expected byte order is maintained.
      */
 } wmi_nan_disc_service_req_cmd_fixed_param;
+
+/**
+ * NAN ranging configuration TLV for WMI_NAN_DISC_SERVICE_REQUEST_CMDID.
+ * Carries ranging parameters from cfg80211_nan_func ranging fields.
+ * Present only when cfg80211_nan_func.ranging_required == true.
+ * Absent (zero-length TLV) when ranging not required.
+ */
+
+/**
+ * Bitmap values for wmi_nan_disc_ranging_config_param.ranging_indication_event.
+ * Multiple bits may be set simultaneously.
+ */
+typedef enum {
+    /** Report ranging result on every measurement (legacy continuous mode) */
+    WMI_NAN_RANGING_INDICATION_CONTINUOUS_LEGACY = 0x01,
+    /** Report ranging result when distance crosses below ingress_distance_mm */
+    WMI_NAN_RANGING_INDICATION_INGRESS_MET       = 0x02,
+    /** Report ranging result when distance crosses above egress_distance_mm */
+    WMI_NAN_RANGING_INDICATION_EGRESS_MET        = 0x04,
+    /** Report ranging result periodically at ranging_interval_ms cadence */
+    WMI_NAN_RANGING_INDICATION_CONTINUOUS        = 0x08,
+} WMI_NAN_RANGING_INDICATION_EVENT;
+
+typedef struct {
+    /** TLV tag and len; tag equals
+     *  WMITLV_TAG_STRUC_wmi_nan_disc_ranging_config_param */
+    A_UINT32 tlv_header;
+
+    /** 1 = ranging required for this service; 0 = no ranging.
+     *  Maps to: cfg80211_nan_func.ranging_required */
+    A_UINT32 ranging_required;
+
+    /** Ranging interval in ms; 0 = use FW default.
+     *  Maps to: cfg80211_nan_func.ranging_interval */
+    A_UINT32 ranging_interval_ms;
+
+    /** Ranging indication event bitmap; see WMI_NAN_RANGING_INDICATION_EVENT.
+     *  Specifies which conditions trigger a ranging result report to host.
+     *  FW derives this from ranging_interval_ms, ingress_distance_mm and
+     *  egress_distance_mm when host sets this field to 0. */
+    A_UINT32 ranging_indication_event;
+
+    /** Ingress geofence threshold in mm; 0 = not set.
+     *  Maps to: cfg80211_nan_func.ingress_distance */
+    A_UINT32 ingress_distance_mm;
+
+    /** Egress geofence threshold in mm; 0 = not set.
+     *  Maps to: cfg80211_nan_func.egress_distance */
+    A_UINT32 egress_distance_mm;
+
+    /** FTM frames per burst; 0 = use FW default.
+     *  Maps to: cfg80211_nan_func.ftms_per_burst */
+    A_UINT32 ftms_per_burst;
+
+    /** FTM preamble / format-bandwidth field; 0 = use FW default.
+     *  Maps to: cfg80211_nan_func.preamble */
+    A_UINT32 preamble;
+
+    /** Channel width (20, 40, 80, 80+80, 160, 320); enum wmi_channel_width.
+     *  Maps to: cfg80211_nan_func.chandef.width (when chandef_valid == true) */
+    A_UINT32 channel_width;
+
+    /** Primary channel frequency in MHz; 0 = use NAN FA channel.
+     *  Maps to: cfg80211_nan_func.chandef.chan->center_freq */
+    A_UINT32 chan_freq;
+
+    /** Center frequency of first segment in MHz; 0 if not applicable.
+     *  Maps to: cfg80211_nan_func.chandef.center_freq1 */
+    A_UINT32 center_freq0;
+
+    /** Center frequency of second segment in MHz; 0 if not applicable.
+     *  Maps to: cfg80211_nan_func.chandef.center_freq2 */
+    A_UINT32 center_freq1;
+
+} wmi_nan_disc_ranging_config_param;
 
 typedef enum {
     WMI_NAN_STATUS_NO_NAN_AVAIL_DFS_CHANNEL_DETECTED  = 0x1,
@@ -33533,7 +33635,7 @@ typedef struct {
     A_UINT32 type;
     /**
      * SDEA control field from peer; use WMI_NAN_DISC_SDEA_CTRL_GET macros;
-     *  bit2=Data Path Required, bit6=Security Required
+     *  bit2=Data Path Required, bit6=Security Required, bit7=Ranging Required
      */
     A_UINT32 sdea_ctrl;
     /** Peer's pairing bootstrap methods bitmap */
@@ -33577,6 +33679,24 @@ typedef struct {
      * Shared Key Descriptor→NIK exchange
      */
     A_UINT32 ies_len;
+
+    /** 1 = peer requires ranging for this service; 0 = no ranging.
+     *  Maps to: cfg80211_nan_match_params.peer_requires_ranging
+     *  Derived from peer SDEA control ranging_required bit. */
+    A_UINT32 peer_requires_ranging;
+
+    /** Ranging indication event type that triggered this match event:
+     *  bit0 = continuous (periodic) ranging result
+     *  bit1 = ingress met (distance < ingress threshold)
+     *  bit2 = egress met  (distance > egress threshold)
+     *  0 = no ranging result available.
+     *  Maps to: cfg80211_nan_match_params.ranging_indication */
+    A_UINT32 ranging_indication;
+
+    /** Ranging measurement result in mm; valid when ranging_indication != 0.
+     *  Maps to: cfg80211_nan_match_params.ranging_measurement */
+    A_UINT32 ranging_measurement_mm;
+
     /**
      * TLV (tag length value) parameters follow this structure:
      * wmi_mac_addr  peer_addr[];  peer NMI address, 6 bytes (padded to 8)
@@ -33588,6 +33708,48 @@ typedef struct {
      * A_UINT8  ies[];             raw IEs blob; present when ies_len > 0
      */
 } wmi_nan_disc_match_event_fixed_param;
+
+/**
+ * WMI_NAN_DISC_CONTINUOUS_RANGE_RESULT_EVENTID fixed_param.
+ * Sent periodically per RTT burst for continuous/periodic ranging.
+ * Carries full ranging result including distance, stdev, RSSI,
+ * measurement counts and start timestamp.
+ * Maps to tNanContinuousRangeResult (HAL path equivalent).
+ */
+typedef struct {
+    /** TLV tag and len; tag equals
+     *  WMITLV_TAG_STRUC_wmi_nan_disc_continuous_range_result_event_fixed_param */
+    A_UINT32 tlv_header;
+    /** NMI VDEV ID */
+    A_UINT32 vdev_id;
+    /** Peer NMI MAC address */
+    wmi_mac_addr peer_mac_addr;
+    /** Local subscribe instance ID */
+    A_UINT32 inst_id;
+    /** Total RTT measurement frames attempted */
+    A_UINT32 num_measurements;
+    /** Total successful RTT measurement frames */
+    A_UINT32 num_successful_measurements;
+    /** Max FTMs per burst supported by responder */
+    A_UINT32 max_num_meas_per_burst;
+    /** Actual burst duration in ms */
+    A_UINT32 burst_duration_ms;
+    /**
+     * Average absolute value of (assumed negative) RSSI in 0.5 dB steps,
+     * e.g. an average RSSI of -71.5 dBm corresponds to the value 143.
+     */
+    A_UINT32 avg_rssi;
+    /** Ranging distance in mm */
+    A_UINT32 distance_mm;
+    /** Ranging distance standard deviation in mm */
+    A_UINT32 distance_stdev_mm;
+    /** meas_start_time:
+     * Measurement start timestamp (64-bit TSF),
+     * split for endian portability and to avoid unaligned 64-bit access
+     */
+    A_UINT32 meas_start_time_lo;
+    A_UINT32 meas_start_time_hi;
+} wmi_nan_disc_continuous_range_result_event_fixed_param;
 
 typedef struct {
     /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_nan_next_dw_info_fixed_param */
