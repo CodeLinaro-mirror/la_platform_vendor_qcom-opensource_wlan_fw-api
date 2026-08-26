@@ -1458,6 +1458,9 @@ typedef enum {
     /** WMI command for athdiag memory/register read or write */
     WMI_ATHDIAG_READ_WRITE_CMDID,
 
+    /** Set adaptive-hysteresis RSSI monitoring config command */
+    WMI_RSSI_ADAPTIVE_BREACH_MONITOR_CONFIG_CMDID,
+
 
     /*  Offload 11k related requests */
     WMI_11K_OFFLOAD_REPORT_CMDID = WMI_CMD_GRP_START_ID(WMI_GRP_11K_OFFLOAD),
@@ -2682,6 +2685,9 @@ typedef enum {
 
     /** WMI event to deliver athdiag read data or write completion status */
     WMI_ATHDIAG_READ_WRITE_EVENTID,
+
+    /** event to report adaptive-hysteresis RSSI breach events */
+    WMI_RSSI_ADAPTIVE_BREACH_EVENTID,
 
 
     /* GPIO Event */
@@ -11440,6 +11446,31 @@ typedef struct {
     A_UINT32 max_num_report; /* this is to suppress number of event to be generated */
 } wmi_rssi_breach_monitor_config_fixed_param;
 
+#define WMI_MAX_RSSI_ADAPTIVE_THRESHOLD_SUPPORTED 3
+
+typedef struct {
+    A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_rssi_adaptive_breach_monitor_config_fixed_param */
+
+    /* vdev_id, where adaptive RSSI monitoring will take place */
+    A_UINT32 vdev_id;
+
+    /* request_id:
+     * host will configure request_id and firmware echoes this id in
+     * RSSI_ADAPTIVE_BREACH_EVENT
+     */
+    A_UINT32 request_id;
+    A_UINT32 enabled_bitmap; /* bit 0 = rssi_threshold[0] enabled */
+    /* rssi_threshold:
+     * unit dBm. absolute low-RSSI floor T; rssi_threshold[0] used
+     */
+    A_INT32 rssi_threshold[WMI_MAX_RSSI_ADAPTIVE_THRESHOLD_SUPPORTED];
+    /* rssi_hysteresis:
+     * unit dB. recovery margin H, applied relative to the last observed
+     * RSSI sample, not to rssi_threshold
+     */
+    A_UINT32 rssi_hysteresis;
+} wmi_rssi_adaptive_breach_monitor_config_fixed_param;
+
 typedef struct {
     /** parameter   */
     A_UINT32 param;
@@ -12271,6 +12302,28 @@ typedef struct {
     /* bssid of the monitored AP's */
     wmi_mac_addr bssid;
 } wmi_rssi_breach_event_fixed_param;
+
+typedef enum {
+    WLAN_RSSI_LOW_RSSI_THRESHOLD_CQM_MET  = 0x1,
+    WLAN_RSSI_HIGH_RSSI_THRESHOLD_CQM_MET = 0x2,
+} CQM_RSSI_MONITOR_EVENT_TYPE;
+
+typedef struct {
+    A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_rssi_adaptive_breach_event_fixed_param */
+    /* vdev_id, where the adaptive RSSI breach event occurred */
+    A_UINT32 vdev_id;
+    /* request id, always echoed back from the corresponding config command */
+    A_UINT32 request_id;
+    /* event_type:
+     * CQM_RSSI_MONITOR_EVENT_TYPE value: WLAN_RSSI_LOW_RSSI_THRESHOLD_CQM_MET
+     * or WLAN_RSSI_HIGH_RSSI_THRESHOLD_CQM_MET
+     */
+    A_UINT32 event_type;
+    /* rssi at the time of the breach/recovery. Unit dBm */
+    A_INT32 rssi;
+    /* bssid of the monitored AP's */
+    wmi_mac_addr bssid;
+} wmi_rssi_adaptive_breach_event_fixed_param;
 
 typedef struct {
     A_UINT32 tlv_header; /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_fw_mem_dump */
@@ -44677,6 +44730,7 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_PDEV_GET_CURRENT_TX_POWER_CMDID);
         WMI_RETURN_STRING(WMI_ROAM_UPDATE_AUTH_STATUS_CMDID);
         WMI_RETURN_STRING(WMI_PDEV_DOWNLOAD_RTT_BLOB_CMDID);
+        WMI_RETURN_STRING(WMI_RSSI_ADAPTIVE_BREACH_MONITOR_CONFIG_CMDID);
     }
 
     return (A_UINT8 *) "Invalid WMI cmd";
