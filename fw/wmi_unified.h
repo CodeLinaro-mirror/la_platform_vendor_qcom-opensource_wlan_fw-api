@@ -42244,6 +42244,26 @@ typedef enum wmi_hw_mode_config_type {
 #define WMI_EXT_MLD_BTM_MLD_RECOMMEND_FOR_MULTI_AP_SUPPORT_GET(ext_mld_capability) WMI_GET_BITS(ext_mld_capability, 7, 1)
 #define WMI_EXT_MLD_BTM_MLD_RECOMMEND_FOR_MULTI_AP_SUPPORT_SET(ext_mld_capability, value) WMI_SET_BITS(ext_mld_capability, 7, 1, value)
 
+#define WMI_EXT_MLD_MULTI_LINK_POWER_MGMT_SUPPORT_GET(ext_mld_capability) WMI_GET_BITS(ext_mld_capability, 8, 1)
+#define WMI_EXT_MLD_MULTI_LINK_POWER_MGMT_SUPPORT_SET(ext_mld_capability, value) WMI_SET_BITS(ext_mld_capability, 8, 1, value)
+
+/*
+ * NOTE: bit 9 conflicts with a concurrent REVmf draft bit assignment per
+ * 802.11bn D2.0 editor's note; bit position may still shift before
+ * ratification.
+ */
+#define WMI_EXT_MLD_ENHANCED_GROUP_KEY_DELIVERY_SUPPORT_GET(ext_mld_capability) WMI_GET_BITS(ext_mld_capability, 9, 1)
+#define WMI_EXT_MLD_ENHANCED_GROUP_KEY_DELIVERY_SUPPORT_SET(ext_mld_capability, value) WMI_SET_BITS(ext_mld_capability, 9, 1, value)
+
+#define WMI_EXT_MLD_MAX_SUPPORTED_DL_BA_BITMAP_LENGTH_GET(ext_mld_capability) WMI_GET_BITS(ext_mld_capability, 10, 3)
+#define WMI_EXT_MLD_MAX_SUPPORTED_DL_BA_BITMAP_LENGTH_SET(ext_mld_capability, value) WMI_SET_BITS(ext_mld_capability, 10, 3, value)
+
+#define WMI_EXT_MLD_DL_DUAL_BA_SUPPORT_GET(ext_mld_capability) WMI_GET_BITS(ext_mld_capability, 13, 1)
+#define WMI_EXT_MLD_DL_DUAL_BA_SUPPORT_SET(ext_mld_capability, value) WMI_SET_BITS(ext_mld_capability, 13, 1, value)
+
+#define WMI_EXT_MLD_NEGOTIATED_TTLM_DISCARD_EXCEPTION_SUPPORT_GET(ext_mld_capability) WMI_GET_BITS(ext_mld_capability, 14, 1)
+#define WMI_EXT_MLD_NEGOTIATED_TTLM_DISCARD_EXCEPTION_SUPPORT_SET(ext_mld_capability, value) WMI_SET_BITS(ext_mld_capability, 14, 1, value)
+
 
 /*
  * 11BE MSD Capability Set and Get macros
@@ -42542,7 +42562,17 @@ typedef struct {
                 nstr_status_update_support:1,
                 emlsr_one_link_support:1,
                 btm_recommended_for_multi_ap:1,
-                reserved3: 24;
+                multi_link_power_mgmt_support:1,
+                /* enhanced_group_key_delivery_support:
+                 * NOTE: conflicts with a concurrent REVmf draft bit
+                 * assignment per 802.11bn D2.0 editor's note; bit
+                 * position may still shift before ratification.
+                 */
+                enhanced_group_key_delivery_support:1,
+                max_supported_dl_ba_bitmap_length:3,
+                dl_dual_ba_support:1,
+                negotiated_ttlm_discard_exception_support:1,
+                reserved3: 17;
         };
         A_UINT32 ext_mld_capability;
     };
@@ -43072,7 +43102,19 @@ typedef struct {
 #define WMI_UHRCAP_MAC_MAPC_ENH_MEAS_SET(uhr_cap_mac, value) \
     WMI_SET_BITS(uhr_cap_mac[1], 8, 1, value)
 
-/* Bits 41-63 --- Reserved */
+/* Bit 41: HG RTWT Support */
+#define WMI_UHRCAP_MAC_HG_RTWT_SUPPORT_GET(uhr_cap_mac) \
+    WMI_GET_BITS(uhr_cap_mac[1], 9, 1)
+#define WMI_UHRCAP_MAC_HG_RTWT_SUPPORT_SET(uhr_cap_mac, value) \
+    WMI_SET_BITS(uhr_cap_mac[1], 9, 1, value)
+
+/* Bit 42: Extended Channel Usage Support */
+#define WMI_UHRCAP_MAC_EXTENDED_CHANNEL_USAGE_SUPPORT_GET(uhr_cap_mac) \
+    WMI_GET_BITS(uhr_cap_mac[1], 10, 1)
+#define WMI_UHRCAP_MAC_EXTENDED_CHANNEL_USAGE_SUPPORT_SET(uhr_cap_mac, value) \
+    WMI_SET_BITS(uhr_cap_mac[1], 10, 1, value)
+
+/* Bits 43-63 --- Reserved */
 
 /*
  * NOTE: uhr_cap_mac[2] and uhr_cap_mac[3] (bits 64-127) are reserved.
