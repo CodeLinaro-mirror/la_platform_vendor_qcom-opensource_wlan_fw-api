@@ -23667,6 +23667,10 @@ typedef struct {
      * 0xFF = non-master crash (master link unchanged).
      */
     A_UINT32 new_master_ll_id;
+
+    /* Negotiated Tx and Rx NSS for this MLO link */
+    A_UINT32 link_tx_nss;
+    A_UINT32 link_rx_nss;
 } wmi_peer_assoc_mlo_params;
 
 typedef struct {
