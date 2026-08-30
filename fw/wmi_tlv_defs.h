@@ -1677,6 +1677,7 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_nan_disc_continuous_range_result_event_fixed_param,
     WMITLV_TAG_STRUC_wmi_rssi_adaptive_breach_monitor_config_fixed_param,
     WMITLV_TAG_STRUC_wmi_rssi_adaptive_breach_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_mapc_cotdma_e2e_config,
 } WMITLV_TAG_ID;
 /*
  * IMPORTANT: Please add _ALL_ WMI Commands Here.
@@ -6681,6 +6682,8 @@ WMITLV_CREATE_PARAM_STRUC(WMI_SMD_ROAM_CONFIG_CMDID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_mapc_ctdma_profile, ctdma_profile, WMITLV_SIZE_VAR) \
     /*--- Co-TDMA TXOP sharing policy ---*/ \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_mapc_ctdma_txop_sharing_policy, ctdma_txop_sharing_policy, WMITLV_SIZE_VAR) \
+    /*--- Co-TDMA E2E per-QMID config ---*/ \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_mapc_cotdma_e2e_config, cotdma_e2e_config, WMITLV_SIZE_VAR) \
     /*--- Co-SR scheme params (future) ---*/ \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_mapc_cosr_params, cosr_params, WMITLV_SIZE_VAR) \
     /*--- Co-BF scheme params (future) ---*/ \
@@ -6707,7 +6710,9 @@ WMITLV_CREATE_PARAM_STRUC(WMI_PEER_GET_MAPC_PARAMS_CMDID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, \
         wmi_mapc_ctdma_profile, mapc_ctdma_profile, WMITLV_SIZE_VAR) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, \
-        wmi_mapc_ctdma_txop_sharing_policy, mapc_ctdma_txop_sharing_policy, WMITLV_SIZE_VAR)
+        wmi_mapc_ctdma_txop_sharing_policy, mapc_ctdma_txop_sharing_policy, WMITLV_SIZE_VAR) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, \
+        wmi_mapc_cotdma_e2e_config, cotdma_e2e_config, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_PEER_MAPC_SETUP_STATUS_EVENTID);
 
 /* WMI event: response to WMI_PEER_GET_MAPC_PARAMS_CMDID */
@@ -6722,7 +6727,9 @@ WMITLV_CREATE_PARAM_STRUC(WMI_PEER_MAPC_SETUP_STATUS_EVENTID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, \
         wmi_mapc_ctdma_profile, mapc_ctdma_profile, WMITLV_SIZE_VAR) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, \
-        wmi_mapc_ctdma_txop_sharing_policy, mapc_ctdma_txop_sharing_policy, WMITLV_SIZE_VAR)
+        wmi_mapc_ctdma_txop_sharing_policy, mapc_ctdma_txop_sharing_policy, WMITLV_SIZE_VAR) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, \
+        wmi_mapc_cotdma_e2e_config, cotdma_e2e_config, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_PEER_MAPC_GET_PARAMS_EVENTID);
 
 /* WMI Command for Energy management OEM cmd data */

@@ -58390,6 +58390,17 @@ typedef struct {
 } wmi_mapc_ctdma_txop_sharing_policy;
 
 /*
+ * wmi_mapc_cotdma_e2e_config:
+ * Co-TDMA E2E per-QMID config.
+ */
+typedef struct {
+    A_UINT32     tlv_header; /* WMITLV_TAG_STRUC_wmi_mapc_cotdma_e2e_config */
+    A_UINT32     config_mode; /* 0 = remove, 1 = add */
+    A_UINT32     qmid;
+    wmi_mac_addr bsta_mac; /* optional intermediate node */
+} wmi_mapc_cotdma_e2e_config;
+
+/*
  * Stub structures for future MAPC coordination schemes.
  * Included now to reserve TLV slots in WMI_PEER_SET_MAPC_PARAMS_CMDID so that
  * the TLV layout remains stable when these schemes are implemented.  Host must
