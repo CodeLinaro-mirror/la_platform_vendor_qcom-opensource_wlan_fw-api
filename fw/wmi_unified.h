@@ -8920,6 +8920,7 @@ enum {
 enum {
     WMI_FILTER_NRP_TYPE_AP_BSSID     = 0x1,
     WMI_FILTER_NRP_TYPE_STA_MACADDR  = 0x2,
+    WMI_RA_BASED_FILTERING           = 0x3,
 };
 
 /* nrp flag - Filter Neighbor Rx Packets
@@ -8934,7 +8935,10 @@ enum {
 typedef struct {
     A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_filter_nrp_config_cmd_fixed_param */
     A_UINT32 vdev_id;
-    /* AP Bssid or Client Mac-addr */
+    /* AP Bssid or Client Mac-addr
+     * When type == WMI_RA_BASED_FILTERING: RA address for ra_idx 0-2,
+     * base address for ra_idx 3.
+     */
     wmi_mac_addr addr;
     /* Add/Remove NRF Filter */
     A_UINT32 action; /* WMI_FILTER_NRP_ACTION enum */
@@ -8944,6 +8948,18 @@ typedef struct {
     A_UINT32 flag; /* WMI_FILTER_NRP_CAPTURE enum */
     /* BSSID index - index of the BSSID register */
     A_UINT32 bssid_idx;
+    /* mac2:
+     * Valid only when type == WMI_RA_BASED_FILTERING and ra_idx == 3:
+     * the address range associated with the base address in addr.
+     * Don't-care for ra_idx 0-2.
+     */
+    wmi_mac_addr mac2;
+    /* ra_idx:
+     * Register index fw writes to.
+     * 0-2: reserved for RA programming.
+     * 3: reserved for base address programming.
+     */
+    A_UINT32 ra_idx;
 } wmi_vdev_filter_nrp_config_cmd_fixed_param; /* Filter for Neighbor Rx Packets */
 
 /* tx peer filter action - Filter Tx Packets  - add/remove filter */
