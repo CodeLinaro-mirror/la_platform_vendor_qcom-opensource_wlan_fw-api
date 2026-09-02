@@ -5012,6 +5012,12 @@ typedef struct {
     A_UINT32 bn_basic_trig_sch_status[HTT_TX_PDEV_STATS_NUM_TX_ERR_STATUS];
     /** 11BN UHR UL OFDMA Basic Trigger scheduler error code */
     A_UINT32 bn_basic_trig_sch_flag_err[HTT_TX_SELFGEN_NUM_SCH_TSFLAG_ERROR_STATS];
+    /**
+     * 11BN UHR UL MUMIMO Basic Trigger scheduler completion status reason code
+     */
+    A_UINT32 bn_ulmumimo_trig_sch_status[HTT_TX_PDEV_STATS_NUM_TX_ERR_STATUS];
+    /** 11BN UHR UL MUMIMO Basic Trigger scheduler error code */
+    A_UINT32 bn_ulmumimo_trig_sch_flag_err[HTT_TX_SELFGEN_NUM_SCH_TSFLAG_ERROR_STATS];
 } htt_stats_tx_selfgen_bn_sched_status_tlv;
 
 /* STATS_TYPE : HTT_DBG_EXT_STATS_TX_SELFGEN_INFO
@@ -8685,6 +8691,8 @@ typedef struct {
      * in response to basic trigger. Typically a data response is expected.
      */
     A_UINT32 bn_ul_mumimo_basic_trigger_rx_qos_null_only;
+    /** Number of times UL MUMIMO TB PPDUs received with 2xLDPC */
+    A_UINT32 bn_ul_mumimo_rx_2x_ldpc;
 } htt_stats_rx_pdev_ul_mumimo_trig_bn_tlv;
 
 #define HTT_STATS_RX_PDEV_UL_MUMIMO_TRIG_BN_MAC_ID_GET(word) \
