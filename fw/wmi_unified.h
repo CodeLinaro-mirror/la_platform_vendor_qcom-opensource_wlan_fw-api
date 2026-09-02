@@ -23898,7 +23898,8 @@ typedef struct {
             A_UINT32 roam_enabled       :1,
                      dl_data_forwarding :1,
                      ul_data_forwarding :1,
-                     reserved           :29;
+                     role               :4, /* wmi_smd_roam_config_role */
+                     reserved           :25;
         };
         A_UINT32 smd_flags;
     };
@@ -58127,6 +58128,7 @@ typedef struct {
 } wmi_vdev_chan_hop_status_report_event_fixed_param;
 
 typedef enum {
+    WMI_SMD_ROAM_CONFIG_ROLE_INVALID    = 0,
     WMI_SMD_ROAM_CONFIG_ROLE_SERVING_AP = 1,
     WMI_SMD_ROAM_CONFIG_ROLE_TARGET_AP,
     WMI_SMD_ROAM_CONFIG_ROLE_STA,
