@@ -8372,6 +8372,7 @@ typedef struct {
     A_UINT32 be_ulofdma_implicit_trig_qos_null;
     A_UINT32 bn_ulofdma_implicit_trig_tried;
     A_UINT32 bn_ulofdma_implicit_trig_qos_null;
+    A_UINT32 bn_ul_ofdma_rx_2x_ldpc;
 } htt_stats_rx_pdev_be_bn_ul_trig_tlv;
 /* preserve old names as aliases */
 typedef htt_stats_rx_pdev_be_bn_ul_trig_tlv
