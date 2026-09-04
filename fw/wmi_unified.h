@@ -36238,6 +36238,10 @@ typedef struct {
      * See macros starting with WMI_PDEV_ID_ for values.
      */
     A_UINT32 pdev_id;
+/*
+ * The TLV listed below follows this TLV in the PDEV_TEMPERATURE_EVENT message:
+ *   - A_UINT32 RFA_temperature[]: RFA temperature in degrees Celcius
+ */
 } wmi_pdev_temperature_event_fixed_param;
 
 typedef enum {
