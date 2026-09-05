@@ -1682,6 +1682,8 @@ typedef struct {
     htt_tlv_hdr_t tlv_hdr;
     /* Num MGMT MPDU transmitted by the target */
     A_UINT32 fw_tx_mgmt_subtype[HTT_STATS_SUBTYPE_MAX];
+    /* Num unicast probe response MPDU transmitted by the target */
+    A_UINT32 fw_tx_ucast_probe_resp;
 } htt_stats_pdev_ctrl_path_tx_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_pdev_ctrl_path_tx_stats_tlv htt_pdev_ctrl_path_tx_stats_tlv_v;
@@ -6503,6 +6505,8 @@ typedef struct {
      * element 2: above 500ms
      */
     A_UINT32 reo2sw4ringipa_backpress_hist[3];
+    /* Num unicast probe request MPDU received by FW */
+    A_UINT32 fw_ring_ucast_probe_req;
 } htt_stats_rx_ring_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_rx_ring_stats_tlv htt_rx_fw_ring_stats_tlv_v;
@@ -9021,6 +9025,8 @@ typedef struct {
         A_UINT32 high_32;
     } bytes_received;
     A_UINT32  rx_msdu_cnt_ac[HTT_NUM_AC_WMM];
+    /** Num unicast probe request MPDU given to protocol */
+    A_UINT32 fw_ring_ucast_probe_req;
 } htt_stats_rx_pdev_fw_stats_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_rx_pdev_fw_stats_tlv htt_rx_pdev_fw_stats_tlv;
@@ -15249,6 +15255,8 @@ typedef struct {
     A_UINT32 rx_stbc[HTT_RX_PDEV_STATS_NUM_MCS_COUNTERS + HTT_RX_PDEV_STATS_NUM_EXTRA_MCS_COUNTERS + HTT_RX_PDEV_STATS_NUM_EXTRA2_MCS_COUNTERS];
     A_UINT32 rts_cnt;
     A_UINT32 rts_success;
+    A_UINT32 fw_tx_ucast_probe_resp;
+    A_UINT32 fw_rx_ucast_probe_req;
 } htt_stats_odd_pdev_mandatory_tlv;
 /* preserve old name alias for new name consistent with the tag name */
 typedef htt_stats_odd_pdev_mandatory_tlv htt_odd_mandatory_pdev_stats_tlv;
