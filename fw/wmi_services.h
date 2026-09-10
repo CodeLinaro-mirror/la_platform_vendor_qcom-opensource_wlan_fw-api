@@ -888,6 +888,10 @@ typedef  enum  {
     /* FW supports TX utilization-based thermal throttling */
     WMI_SERVICE_UTIL_BASED_THROTTLING = 526,
 
+    /* FW supports RSSI linearity + thermal corr features */
+    WMI_SERVICE_RSSI_LINEARITY_AND_THERM_CORRECTIONS = 527,
+    WMI_SERVICE_RSSI_DBADD_EWMA_MAXNF = 528,
+
 
     WMI_MAX_EXT2_SERVICE
 
