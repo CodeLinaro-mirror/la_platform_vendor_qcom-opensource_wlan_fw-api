@@ -23623,6 +23623,9 @@ typedef struct {
     wmi_mac_addr bss_id;
     wmi_channel wmi_chan;
     wmi_mac_addr self_mac;
+    /* Negotiated Tx and Rx NSS for this MLO link */
+    A_UINT32 link_tx_nss;
+    A_UINT32 link_rx_nss;
 } wmi_peer_assoc_mlo_partner_link_params;
 
 /*
