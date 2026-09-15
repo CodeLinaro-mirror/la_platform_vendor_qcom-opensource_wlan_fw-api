@@ -26255,10 +26255,10 @@ typedef struct {
 /* host supplicant OKC supported; FW skips PMK match-delete */
 #define WMI_ROAM_OFFLOAD_FLAG_USER_OKC_CACHE_SUPPORT 3
 /*
- * Indication from HOST that it supports FT-IM roaming
- * when FT-PSK self roaming fails
+ * HOST supplicant supports FT-IM roaming when
+ * there is an auth failure for self roaming FT-PSK case.
  */
-#define WMI_ROAM_FLAG_FT_IM_PSK_ROAM_NOTIF_SUPPORT  4
+#define WMI_ROAM_OFFLOAD_FLAG_FT_IM_AUTH_NOTIF_SUPPORT 4
 /* from bit 5 to bit 31 are reserved */
 
 #define WMI_SET_ROAM_OFFLOAD_OKC_ENABLED(flag) do { \
@@ -26294,13 +26294,13 @@ typedef struct {
 #define WMI_GET_ROAM_OFFLOAD_USER_OKC_CACHE_SUPPORT(flag) \
     ((flag) & (1 << WMI_ROAM_OFFLOAD_FLAG_USER_OKC_CACHE_SUPPORT))
 
-#define WMI_SET_ROAM_FT_IM_PSK_ROAM_NOTIF_SUPPORT(flag) \
+#define WMI_SET_ROAM_OFFLOAD_FT_IM_AUTH_NOTIF_SUPPORT(flag) \
     do { \
-        (flag) |= (1 << WMI_ROAM_FLAG_FT_IM_PSK_ROAM_NOTIF_SUPPORT); \
+        (flag) |= (1 << WMI_ROAM_OFFLOAD_FLAG_FT_IM_AUTH_NOTIF_SUPPORT); \
     } while (0)
 
-#define WMI_GET_ROAM_FT_IM_PSK_ROAM_NOTIF_SUPPORT(flag) \
-    ((flag) & (1 << WMI_ROAM_FLAG_FT_IM_PSK_ROAM_NOTIF_SUPPORT))
+#define WMI_GET_ROAM_OFFLOAD_FT_IM_AUTH_NOTIF_SUPPORT(flag) \
+    ((flag) & (1 << WMI_ROAM_OFFLOAD_FLAG_FT_IM_AUTH_NOTIF_SUPPORT))
 
 /* This TLV will be filled only in case of wpa-psk/wpa2-psk/wpa3 */
 typedef struct {
