@@ -867,6 +867,15 @@ typedef  enum  {
      */
     WMI_SERVICE_SKIP_PMK_MATCH_DELETE_SUPPORT = 522,
 
+    /* FW supports security profile configuration (802.11bn) */
+    WMI_SERVICE_SECURITY_PROFILE_SUPPORT = 523,
+
+    /*
+     * FW supports MLO reconfig-recovery mode —
+     * chip crash handled via ML-reconfig sequence
+     */
+    WMI_SERVICE_MLO_RECOVERY_RECONFIG_SUPPORT = 524,
+
 
     WMI_MAX_EXT2_SERVICE
 
