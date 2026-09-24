@@ -59201,11 +59201,26 @@ typedef struct {
     A_UINT32 loc_civic_ie_len;
 } wmi_rtt_peer_meas_report_peer_meas_result_info;
 
+typedef enum {
+    WMI_RTT_PEER_MEAS_REPORT_RESULT_STATUS_UNSPECIFIED = 0,
+    WMI_RTT_PEER_MEAS_REPORT_RESULT_STATUS_ONGOING = 1,
+    WMI_RTT_PEER_MEAS_REPORT_RESULT_STATUS_COMPLETE = 2,
+} WMI_RTT_PEER_MEAS_REPORT_RESULT_STATUS;
+
 typedef struct {
     /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_rtt_peer_meas_report_event_fixed_param */
     A_UINT32 tlv_header;
     A_UINT32 req_id; /** Unique Identifier */
     A_UINT32 vdev_id;
+
+    /** result_complete_flag:
+     * This flag shows whether a request is completed for given req_id.
+     * 0: Unspecified (legacy case)
+     * 1: Further results are still pending
+     * 2: Results are complete for all peers
+     * Refer to the WMI_RTT_PEER_MEAS_REPORT_RESULT_STATUS enum.
+     */
+    A_UINT32 result_complete_flag;
     /**
      * This fixed param TLV will be followed by the below TLVs
      *   - wmi_rtt_peer_meas_report_peer_meas_result_info peer_meas_info[]
