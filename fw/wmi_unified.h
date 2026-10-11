@@ -791,6 +791,9 @@ typedef enum {
     /** WMI cmd to request channel hopping per-slot status report */
     WMI_VDEV_GET_CHAN_HOP_STATUS_REPORT_CMDID,
 
+    /** WMI cmd to enable/disable UHR operating modes (DPS, NPCA etc) on a vdev */
+    WMI_VDEV_UHR_MODE_CONFIG_CMDID,
+
     /* peer specific commands */
 
     /** create a peer */
@@ -5613,8 +5616,14 @@ typedef struct {
      *     scan-radio operation on non-country channels.
      *     Refer to the below definitions of WMI_RSRC_CFG_HOST_SERVICE_FLAG
      *     SCAN_RADIO_NON_COUNTRY_CHANNEL_SUPPORT_GET and _SET macros.
+     *  Bit 30
+     *     Set by the host to indicate its own support for FW/HW AMSDU
+     *     aggregation in Passthru mode, independent of the FW service
+     *     capability WMI_SERVICE_PASSTHRU_VDEV_AMSDU_SUPPORT.
+     *     Refer to WMI_RSRC_CFG_HOST_SERVICE_FLAG_PASSTHRU_AMSDU_GET
+     *     and _SET macros.
      *
-     *  Bits 31:30 - Reserved
+     *  Bit 31 - Reserved
      */
     A_UINT32 host_service_flags;
 
@@ -6317,6 +6326,17 @@ typedef struct {
 #define WMI_RSRC_CFG_HOST_SERVICE_FLAG_SCAN_RADIO_NON_COUNTRY_CHANNEL_SUPPORT_SET(host_service_flags, val) \
     WMI_SET_BITS(host_service_flags, 29, 1, val)
 
+
+/*
+ * Bit 30: Host supports FW/HW AMSDU aggregation in Passthru mode.
+ * Advertised independently of WMI_SERVICE_PASSTHRU_VDEV_AMSDU_SUPPORT.
+ * FW uses NWIFI input for Passthru peers only when this bit is set;
+ * if clear, FW retains the legacy RAW input format.
+ */
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_PASSTHRU_AMSDU_GET(host_service_flags) \
+    WMI_GET_BITS(host_service_flags, 30, 1)
+#define WMI_RSRC_CFG_HOST_SERVICE_FLAG_PASSTHRU_AMSDU_SET(host_service_flags, val) \
+    WMI_SET_BITS(host_service_flags, 30, 1, val)
 
 #define WMI_RSRC_CFG_CARRIER_CFG_CHARTER_ENABLE_GET(carrier_config) \
     WMI_GET_BITS(carrier_config, 0, 1)
@@ -21251,6 +21271,19 @@ typedef enum {
      */
     WMI_VDEV_PARAM_REJECT_ADDBA,                          /* 0xD6 */
 
+    /*
+     * By default, FW auto-triggers enablement of UHR opmodes (NPCA, DPS,
+     * etc.) once STA VDEV association completes as UHR, without host
+     * involvement. For certain usecases (e.g. certification), host instead
+     * wants run-time control over these opmodes via
+     * WMI_VDEV_UHR_MODE_CONFIG_CMDID, so this param lets host suppress FW's
+     * auto-enablement, per opmode.
+     * param_value is a bitmap of wmi_uhr_mode_bmap values (see wmi_uhr_mode_id):
+     *      bit=0 - FW auto-triggers the mode's enablement (default)
+     *      bit=1 - host suppresses the mode's auto-enablement trigger
+     * To suppress a mode, send this param before PEER_ASSOC.
+     */
+    WMI_VDEV_PARAM_SUPPRESS_FW_UHR_OPMODE_AUTO_EN, /* 0xD7 */
 
 
     /*=== ADD NEW VDEV PARAM TYPES ABOVE THIS LINE ===
@@ -24713,6 +24746,65 @@ typedef struct {
 
 #define WMI_OMP_EMLSR_IN_DEV_COEX_ACTIVITIES_GET(_var)       WMI_GET_BITS(_var, 28, 1)
 #define WMI_OMP_EMLSR_IN_DEV_COEX_ACTIVITIES_SET(_var, _val) WMI_SET_BITS(_var, 28, 1, _val)
+
+
+/* UHR mode IDs - bit positions within uhr_mode_en_bmap / uhr_mode_dis_bmap */
+typedef enum {
+    WMI_UHR_MODE_ID_DPS  = 0, /* Dynamic Power Save */
+    WMI_UHR_MODE_ID_NPCA = 1, /* Non-Primary Channel Access */
+
+    /* Add new UHR mode IDs above this line */
+    WMI_UHR_MODE_ID_MAX,
+} wmi_uhr_mode_id;
+
+typedef enum {
+    WMI_UHR_MODE_BMAP_DPS  = (1 << WMI_UHR_MODE_ID_DPS),
+    WMI_UHR_MODE_BMAP_NPCA = (1 << WMI_UHR_MODE_ID_NPCA),
+} wmi_uhr_mode_bmap;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_uhr_mode_config_cmd_fixed_param */
+    A_UINT32 vdev_id;
+
+    /*
+     * Bitmap of UHR modes to enable, one bit per wmi_uhr_mode_id.
+     * Each set mode may carry its mode param TLV below.
+     */
+    A_UINT32 uhr_mode_en_bmap;
+
+    /*
+     * Bitmap of UHR modes to disable, same per-wmi_uhr_mode_id bit positions
+     * as uhr_mode_en_bmap. The per-mode param TLV is not required; if present it is ignored.
+     */
+    A_UINT32 uhr_mode_dis_bmap;
+
+    /* A mode's bit is not expected to be set in both uhr_mode_en_bmap and
+     * uhr_mode_dis_bmap; if it is, the disable bit takes effect and the
+     * enable bit is ignored.
+     */
+
+    /*
+     * Followed by this TLV array, which may carry 1 element when corresponding mode is set in enable bitmap.
+     *   wmi_vdev_uhr_dps_mode_params  dps_mode_params[];
+     */
+} wmi_vdev_uhr_mode_config_cmd_fixed_param;
+
+typedef struct {
+    A_UINT32 tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_vdev_uhr_dps_mode_params */
+    /*
+     * Bit0:    ICF Required
+     *           WMI_VDEV_UHR_DPS_ICF_REQUIRED_GET / _SET
+     * Bit1-6:  Padding Delay; In units of 4 us.
+     *           WMI_VDEV_UHR_DPS_PADDING_DELAY_GET / _SET
+     * Bit7:31: Reserved
+     */
+    A_UINT32 dps_mode_param;
+} wmi_vdev_uhr_dps_mode_params;
+
+#define WMI_VDEV_UHR_DPS_ICF_REQUIRED_GET(_var) WMI_GET_BITS(_var, 0, 1)
+#define WMI_VDEV_UHR_DPS_ICF_REQUIRED_SET(_var, _val) WMI_SET_BITS(_var, 0, 1, _val)
+#define WMI_VDEV_UHR_DPS_PADDING_DELAY_GET(_var) WMI_GET_BITS(_var, 1, 6)
+#define WMI_VDEV_UHR_DPS_PADDING_DELAY_SET(_var, _val) WMI_SET_BITS(_var, 1, 6, _val)
 
 
 typedef struct {
@@ -44992,6 +45084,7 @@ static INLINE A_UINT8 *wmi_id_to_name(A_UINT32 wmi_command)
         WMI_RETURN_STRING(WMI_REQUEST_TDLS_STATS_CMDID);
         WMI_RETURN_STRING(WMI_GET_CHIPSET_LOGGING_STATS_CMDID);
         WMI_RETURN_STRING(WMI_VDEV_GET_CHAN_HOP_STATUS_REPORT_CMDID);
+        WMI_RETURN_STRING(WMI_VDEV_UHR_MODE_CONFIG_CMDID);
         WMI_RETURN_STRING(WMI_NAN_DISC_SERVICE_REQ_CMDID);
         WMI_RETURN_STRING(WMI_NAN_DISC_CANCEL_SERVICE_REQ_CMDID);
         WMI_RETURN_STRING(WMI_SET_MODIFY_TX_PLIM_CMDID);

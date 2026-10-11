@@ -899,6 +899,10 @@ typedef  enum  {
      * MAX(nf_hw_dbm) for RSSI computation. Host to follow the same recipe.
      */
     WMI_SERVICE_RSSI_DBADD_EWMA_MAXNF = 528,
+    /*
+     * Indicate FW support for PASSTHRU VDEV AMSDU
+     */
+    WMI_SERVICE_PASSTHRU_VDEV_AMSDU_SUPPORT = 529,
 
 
     WMI_MAX_EXT2_SERVICE
