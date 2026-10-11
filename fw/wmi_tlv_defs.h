@@ -1683,6 +1683,8 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_nan_disc_service_suspend_resume_rsp_event_fixed_param,
     WMITLV_TAG_STRUC_wmi_tpc_pwr_breakdown_entry,
     WMITLV_TAG_STRUC_wmi_halphy_enhanced_stats_query_param,
+    WMITLV_TAG_STRUC_wmi_vdev_uhr_mode_config_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_vdev_uhr_dps_mode_params,
 } WMITLV_TAG_ID;
 /*
  * IMPORTANT: Please add _ALL_ WMI Commands Here.
@@ -2308,6 +2310,7 @@ typedef enum {
     OP(WMI_ROAM_UPDATE_AUTH_STATUS_CMDID) \
     OP(WMI_RSSI_ADAPTIVE_BREACH_MONITOR_CONFIG_CMDID) \
     OP(WMI_NAN_DISC_SERVICE_SUSPEND_RESUME_CMDID) \
+    OP(WMI_VDEV_UHR_MODE_CONFIG_CMDID) \
     /* add new CMD_LIST elements above this line */
 
 
@@ -3306,6 +3309,11 @@ WMITLV_CREATE_PARAM_STRUC(WMI_PEER_ASSOC_V2_CMDID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_uhr_omp_dso_params, peer_omp_dso_params, WMITLV_SIZE_VAR) \
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_peer_uhr_omp_emlsr_params, peer_omp_emlsr_params, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_PEER_UHR_OMP_CMDID);
+
+#define WMITLV_TABLE_WMI_VDEV_UHR_MODE_CONFIG_CMDID(id,op,buf,len) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_vdev_uhr_mode_config_cmd_fixed_param, wmi_vdev_uhr_mode_config_cmd_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_vdev_uhr_dps_mode_params, dps_mode_params, WMITLV_SIZE_VAR)
+WMITLV_CREATE_PARAM_STRUC(WMI_VDEV_UHR_MODE_CONFIG_CMDID);
 
 /* Peer Set Rate Report Condition Cmd */
 #define WMITLV_TABLE_WMI_PEER_SET_RATE_REPORT_CONDITION_CMDID(id,op,buf,len) \
