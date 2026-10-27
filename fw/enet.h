@@ -74,6 +74,7 @@ struct ethernet_vlan_hdr_t {
     A_UINT8 ethertype[2];
 };
 
+#if 0
 typedef PREPACK struct _wai_hdr {
     A_UINT8 version[2];
     A_UINT8 type;
@@ -90,10 +91,11 @@ typedef PREPACK struct {
     A_UINT16 vlan_tci;
     A_UINT16 vlan_encap_p;
 } POSTPACK vlan_hdr_t;
+#endif
 
 #define ETHERTYPE_IS_EAPOL_WAPI(typeorlen)           \
-    ((typeorlen) == ETHERTYPE_PAE ||  \
-     (typeorlen) == ETHERTYPE_WAI)
+			((typeorlen) == ETHERTYPE_PAE ||  \
+			(typeorlen) == ETHERTYPE_WAI)
 
 #define IS_ETHERTYPE(_typeOrLen) ((_typeOrLen) >= 0x0600)
 
@@ -102,11 +104,11 @@ typedef PREPACK struct {
 #endif
 
 #ifndef ETHERTYPE_AARP
-#define ETHERTYPE_AARP  0x80f3 /* Internal QCA AARP protocol */
+#define	ETHERTYPE_AARP	0x80f3		/* Internal QCA AARP protocol */
 #endif
 
 #ifndef ETHERTYPE_IPX
-#define ETHERTYPE_IPX   0x8137 /* IPX over DIX protocol */
+#define ETHERTYPE_IPX    0x8137    /* IPX over DIX protocol */
 #endif
 
 #ifndef ETHERTYPE_ARP
@@ -132,18 +134,6 @@ typedef PREPACK struct {
 #ifndef ETHERTYPE_PAE
 #define ETHERTYPE_PAE   0x888E /* EAP over LAN (EAPOL) */
 #endif
-
-  #ifndef EAPOL_KEY_TYPE
-  #define EAPOL_KEY_TYPE 0x3 /* EAP over LAN (EAPOL) */
-  #endif
-
-  #ifndef EAPOL_PAIRKEY
-  #define EAPOL_PAIRKEY 0x008
-  #endif
-
-  #ifndef EAPOL_GRPKEY
-  #define EAPOL_GRPKEY 0x00
-  #endif
 
 #ifndef ETHERTYPE_WAI
 #define ETHERTYPE_WAI   0x88B4 /* WAPI */
