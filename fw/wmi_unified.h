@@ -23623,6 +23623,9 @@ typedef struct {
     wmi_mac_addr bss_id;
     wmi_channel wmi_chan;
     wmi_mac_addr self_mac;
+    /* Negotiated Tx and Rx NSS for this MLO link */
+    A_UINT32 link_tx_nss;
+    A_UINT32 link_rx_nss;
 } wmi_peer_assoc_mlo_partner_link_params;
 
 /*
@@ -26251,7 +26254,12 @@ typedef struct {
 #define WMI_ROAM_OFFLOAD_FLAG_SAE_SAME_PMKID 2      /* Use same PMKID for WPA3 SAE roaming */
 /* host supplicant OKC supported; FW skips PMK match-delete */
 #define WMI_ROAM_OFFLOAD_FLAG_USER_OKC_CACHE_SUPPORT 3
-/* from bit 4 to bit 31 are reserved */
+/*
+ * HOST supplicant supports FT-IM roaming when
+ * there is an auth failure for self roaming FT-PSK case.
+ */
+#define WMI_ROAM_OFFLOAD_FLAG_FT_IM_AUTH_NOTIF_SUPPORT 4
+/* from bit 5 to bit 31 are reserved */
 
 #define WMI_SET_ROAM_OFFLOAD_OKC_ENABLED(flag) do { \
         (flag) |=  (1 << WMI_ROAM_OFFLOAD_FLAG_OKC_ENABLED);      \
@@ -26285,6 +26293,14 @@ typedef struct {
 
 #define WMI_GET_ROAM_OFFLOAD_USER_OKC_CACHE_SUPPORT(flag) \
     ((flag) & (1 << WMI_ROAM_OFFLOAD_FLAG_USER_OKC_CACHE_SUPPORT))
+
+#define WMI_SET_ROAM_OFFLOAD_FT_IM_AUTH_NOTIF_SUPPORT(flag) \
+    do { \
+        (flag) |= (1 << WMI_ROAM_OFFLOAD_FLAG_FT_IM_AUTH_NOTIF_SUPPORT); \
+    } while (0)
+
+#define WMI_GET_ROAM_OFFLOAD_FT_IM_AUTH_NOTIF_SUPPORT(flag) \
+    ((flag) & (1 << WMI_ROAM_OFFLOAD_FLAG_FT_IM_AUTH_NOTIF_SUPPORT))
 
 /* This TLV will be filled only in case of wpa-psk/wpa2-psk/wpa3 */
 typedef struct {
