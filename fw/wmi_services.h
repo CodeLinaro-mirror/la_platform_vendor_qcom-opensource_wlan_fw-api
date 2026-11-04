@@ -847,6 +847,59 @@ typedef  enum  {
      */
     WMI_SERVICE_NAN_OFFLOAD_MODE_SUPPORT = 519,
 
+    /* WMI_SERVICE_PDEV_SET_CUMAC_CHIP_CMD_SUPPORT:
+     * FW supports handling WMI_PDEV_SET_CUMAC_CHIP_CMDID.
+     * When this service bit is set in wmi_service_ready, the host can
+     * set WMI_RSRC_CFG_HOST_SERVICE_FLAG_CUMAC_CMD_SUPPORT in
+     * wmi_resource_config.host_service_flags to indicate it will send
+     * WMI_PDEV_SET_CUMAC_CHIP_CMDID to trigger wal_mlo_cumac_init().
+     * If the host does not set this flag, FW will call wal_mlo_cumac_init()
+     * from wal_mlo_soc_init() with the default chip id.
+     */
+    WMI_SERVICE_PDEV_SET_CUMAC_CHIP_CMD_SUPPORT = 520,
+
+    /* Services related to MAPC / C-TDMA (802.11bn) */
+    WMI_SERVICE_UHR_MAX_CTDMA_AP_PEERS_SUPPORT = 521,
+
+    /*
+     * FW supports skipping PMK match-based cache delete
+     * during OKC roam for 1X AKM
+     */
+    WMI_SERVICE_SKIP_PMK_MATCH_DELETE_SUPPORT = 522,
+
+    /* FW supports security profile configuration (802.11bn) */
+    WMI_SERVICE_SECURITY_PROFILE_SUPPORT = 523,
+
+    /*
+     * FW supports MLO reconfig-recovery mode —
+     * chip crash handled via ML-reconfig sequence
+     */
+    WMI_SERVICE_MLO_RECOVERY_RECONFIG_SUPPORT = 524,
+
+    /** FW supports NAN ranging in CFG offload mode:
+     *  - Discovery-based ranging (triggered on NAN disc match)
+     *  - Periodic ranging (ranging_interval_ms in disc service req)
+     *  - Request-based ranging (WMI_RTT_PEER_MEAS_REQ_CMDID on NAN vdev)
+     *  Uses wmi_nan_disc_ranging_config_param TLV in
+     *  WMI_NAN_DISC_SERVICE_REQUEST_CMDID for disc/periodic ranging.
+     *  Uses existing WMI_RTT_PEER_MEAS_* for request-based ranging. */
+    WMI_SERVICE_NAN_RANGING_OFFLOAD_SUPPORT = 525,
+
+    /* FW supports TX utilization-based thermal throttling */
+    WMI_SERVICE_UTIL_BASED_THROTTLING = 526,
+
+    /*
+     * Indicates FW applies RSSI linearity and thermal corrections
+     * from ucode per packet TLV. Host should follow the same and use only
+     * nf_hw_dbm from WMI_PDEV_RSSI_DBM_CONVERSION_PARAMS_INFO_EVENTID.
+     */
+    WMI_SERVICE_RSSI_LINEARITY_AND_THERM_CORRECTIONS = 527,
+    /*
+     * Indicates FW does Jacobian Log-Domain Combining, EWMA_wt8 and
+     * MAX(nf_hw_dbm) for RSSI computation. Host to follow the same recipe.
+     */
+    WMI_SERVICE_RSSI_DBADD_EWMA_MAXNF = 528,
+
 
     WMI_MAX_EXT2_SERVICE
 
