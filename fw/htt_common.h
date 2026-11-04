@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012-2016, 2020 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
